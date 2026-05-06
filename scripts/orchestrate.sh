@@ -395,6 +395,24 @@ SUPPORTS_XHIGH_EFFORT=false             # v9.23: Claude Code v2.1.111+ (xhigh ef
 SUPPORTS_OPUS_4_7=false                 # v9.23: Claude Code v2.1.111+ (claude-opus-4-7 model available via Anthropic API)
 SUPPORTS_AUTO_MODE_GA=false             # v9.23: Claude Code v2.1.111+ (auto mode no longer requires --enable-auto-mode flag)
 SUPPORTS_ULTRAREVIEW=false              # v9.23: Claude Code v2.1.111+ (/ultrareview — cloud parallel multi-agent PR review, complements /octo:review)
+SUPPORTS_GATEWAY_MODEL_DISCOVERY=false  # v9.36: Claude Code v2.1.126+ (/model picker can list Anthropic-compatible gateway /v1/models)
+SUPPORTS_PROJECT_PURGE=false            # v9.36: Claude Code v2.1.126+ (claude project purge clears project transcripts/tasks/config)
+SUPPORTS_SKILL_ACTIVATED_OTEL_TRIGGER=false # v9.36: Claude Code v2.1.126+ (skill_activated OTel includes invocation_trigger)
+SUPPORTS_PLUGIN_ZIP_DIR=false           # v9.36: Claude Code v2.1.128+ (--plugin-dir accepts .zip archives)
+SUPPORTS_MCP_TOOL_COUNTS=false          # v9.36: Claude Code v2.1.128+ (/mcp shows tool counts and zero-tool warnings)
+SUPPORTS_MCP_WORKSPACE_RESERVED=false   # v9.36: Claude Code v2.1.128+ (MCP server name "workspace" is reserved)
+SUPPORTS_LOCAL_SETTINGS_SUGGESTIONS=false # v9.36: Claude Code v2.1.128+ (SDK hosts can persist Bash allow suggestions to localSettings)
+SUPPORTS_SUBPROCESS_OTEL_SCRUB=false    # v9.36: Claude Code v2.1.128+ (Bash/hooks/MCP/LSP no longer inherit OTEL_* vars)
+SUPPORTS_INIT_PLUGIN_ERRORS=false       # v9.36: Claude Code v2.1.128+ (stream-json init.plugin_errors includes plugin-dir load failures)
+SUPPORTS_PARALLEL_SHELL_READONLY_RESILIENCE=false # v9.36: Claude Code v2.1.128+ (read-only shell failure no longer cancels sibling calls)
+SUPPORTS_PLUGIN_UPDATE_NPM=false        # v9.36: Claude Code v2.1.128+ (/plugin update detects npm-sourced plugins)
+SUPPORTS_PLUGIN_URL=false               # v9.36: Claude Code v2.1.129+ (--plugin-url fetches plugin zip for current session)
+SUPPORTS_FORCE_SYNC_OUTPUT=false        # v9.36: Claude Code v2.1.129+ (CLAUDE_CODE_FORCE_SYNC_OUTPUT forces synchronized terminal output)
+SUPPORTS_PACKAGE_MANAGER_AUTO_UPDATE=false # v9.36: Claude Code v2.1.129+ (CLAUDE_CODE_PACKAGE_MANAGER_AUTO_UPDATE prompts after background brew/winget upgrade)
+SUPPORTS_EXPERIMENTAL_MANIFEST_KEYS=false # v9.36: Claude Code v2.1.129+ (themes/monitors should live under experimental)
+SUPPORTS_GATEWAY_MODEL_DISCOVERY_OPT_IN=false # v9.36: Claude Code v2.1.129+ (gateway model discovery requires CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=1)
+SUPPORTS_SKILL_OVERRIDES=false          # v9.36: Claude Code v2.1.129+ (skillOverrides off/user-invocable-only/name-only)
+SUPPORTS_PR_COUNT_MCP_OTEL=false        # v9.36: Claude Code v2.1.129+ (claude_code.pull_request.count includes MCP-created PRs)
 OCTOPUS_BACKEND="api"              # v8.16: Detected backend (api|bedrock|vertex|foundry)
 AGENT_TEAMS_ENABLED="${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-0}"
 OCTOPUS_SECURITY_V870="${OCTOPUS_SECURITY_V870:-true}"
@@ -1245,7 +1263,7 @@ check_claude_version() {
         fi
 
         if [[ -n "$current_version" ]]; then
-            if version_compare "$current_version" "$min_version"; then
+            if version_compare "$current_version" "$min_version" ">="; then
                 status="ok"
             else
                 status="outdated"

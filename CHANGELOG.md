@@ -1,5 +1,20 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Sync Claude Code compatibility flags through v2.1.131, including plugin zip/URL loading, skillOverrides, gateway model discovery opt-in, MCP workspace diagnostics, init.plugin_errors, and package-manager auto-update guidance.
+- Add `/octo:doctor` checks for modern Claude Code features that Octopus can use or should warn about, including reserved MCP server names, experimental manifest key placement, gateway model discovery, and skillOverrides.
+- Add release validation for packaged plugin zip support and optional runtime smoke tests using `--plugin-dir` and `--plugin-url`.
+- Document the v2.1.14 minimum runtime, modern `/octo:doctor` compatibility checks, gateway model discovery opt-in, skillOverrides guidance, and the opt-in zip/plugin-url release smoke workflow.
+
+### Fixed
+
+- Treat Claude Code v2.1.131 as newer than the v2.1.14 minimum by using the explicit `>=` version comparison operator in the version preflight.
+
+---
+
 ## [9.35.0] - 2026-05-05
 
 ### Added
