@@ -2,14 +2,25 @@
 
 ## [Unreleased]
 
+---
+
+## [9.36.1] - 2026-05-07
+
 ### Added
 
 - Sync Claude Code v2.1.132 Bash session ID support with `SUPPORTS_BASH_SESSION_ID_ENV`, `/octo:doctor` guidance, and a shared session resolver that prefers `CLAUDE_CODE_SESSION_ID` for Claude Code subprocess state.
 - Add a plugin assembly standard and dependency-free validator for skills, agents, commands, connector metadata, and manifest structure, informed by Anthropic's newer multi-plugin packaging patterns.
+- Add portable root Codex skills with per-skill OpenAI interface metadata and a Codex host adapter block.
 
 ### Changed
 
 - Use Claude Code's official Bash `CLAUDE_CODE_SESSION_ID` for careful/freeze/guard state files, proof packets, cost tracking, statusline/HUD context, and compression analytics while preserving Codex/Gemini host-specific session fallbacks.
+- Point the Codex manifest at the portable root `skills/` tree and remove Claude-only hook references from the Codex package surface.
+- Preserve Claude command and skill registration while adapting generated Codex skill wording for runtime provider availability.
+
+### Fixed
+
+- Preserve the released `skill-verify` Codex skill name as a compatibility alias for the new verification gate source skill.
 
 ---
 

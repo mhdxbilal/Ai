@@ -1,7 +1,7 @@
 {
   "name": "octo",
-  "version": "9.36.0",
-  "description": "v9.36.0 — Remote/web session defaults: autonomous routing, skipped provider probes, lightweight statusline, and setup/doctor tier hints. Run /octo:setup.",
+  "version": "9.36.1",
+  "description": "v9.36.1 — Codex-compatible portable skills with Claude-safe provider routing and session ID support. Run /octo:setup.",
   "author": {
     "name": "nyldn",
     "url": "https://github.com/nyldn"
