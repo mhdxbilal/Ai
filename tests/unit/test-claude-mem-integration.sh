@@ -51,6 +51,58 @@ else
     fail "Bridge suppresses stderr" "missing 2>/dev/null"
 fi
 
+# ── 3b. Bridge discovers claude-mem worker port ─────────────────────
+
+mock_bridge_bin="$TEST_TMP_DIR/claude-mem-mock-bin"
+mkdir -p "$mock_bridge_bin"
+cat > "$mock_bridge_bin/curl" <<'SH'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "$CURL_ARGS_FILE"
+exit 1
+SH
+chmod +x "$mock_bridge_bin/curl"
+
+test_case "Bridge reads claude-mem worker port from settings"
+settings_home="$TEST_TMP_DIR/claude-mem-settings-home"
+mkdir -p "$settings_home/.claude-mem"
+printf '{"CLAUDE_MEM_WORKER_PORT":37742}\n' > "$settings_home/.claude-mem/settings.json"
+settings_curl_args="$TEST_TMP_DIR/claude-mem-settings-curl.txt"
+CURL_ARGS_FILE="$settings_curl_args" HOME="$settings_home" PATH="$mock_bridge_bin:$PATH" "$BRIDGE" available >/dev/null || true
+if grep -q 'localhost:37742/api/health' "$settings_curl_args" 2>/dev/null; then
+    test_pass
+else
+    test_fail "expected bridge health check to use settings port 37742"
+fi
+
+test_case "Bridge derives Linux/macOS default port from UID"
+uid_home="$TEST_TMP_DIR/claude-mem-uid-home"
+uid_bin="$TEST_TMP_DIR/claude-mem-uid-bin"
+uid_curl_args="$TEST_TMP_DIR/claude-mem-uid-curl.txt"
+mkdir -p "$uid_home" "$uid_bin"
+printf '%s\n' '#!/usr/bin/env bash' 'echo 1001' > "$uid_bin/id"
+chmod +x "$uid_bin/id"
+CURL_ARGS_FILE="$uid_curl_args" HOME="$uid_home" PATH="$uid_bin:$mock_bridge_bin:$PATH" "$BRIDGE" available >/dev/null || true
+if grep -q 'localhost:37701/api/health' "$uid_curl_args" 2>/dev/null; then
+    test_pass
+else
+    test_fail "expected bridge health check to use UID-derived port 37701"
+fi
+
+test_case "Bridge preserves Windows Git Bash default port"
+win_home="$TEST_TMP_DIR/claude-mem-win-home"
+win_bin="$TEST_TMP_DIR/claude-mem-win-bin"
+win_curl_args="$TEST_TMP_DIR/claude-mem-win-curl.txt"
+mkdir -p "$win_home" "$win_bin"
+printf '%s\n' '#!/usr/bin/env bash' 'echo MINGW64_NT-10.0' > "$win_bin/uname"
+printf '%s\n' '#!/usr/bin/env bash' 'echo 1001' > "$win_bin/id"
+chmod +x "$win_bin/uname" "$win_bin/id"
+CURL_ARGS_FILE="$win_curl_args" HOME="$win_home" PATH="$win_bin:$mock_bridge_bin:$PATH" "$BRIDGE" available >/dev/null || true
+if grep -q 'localhost:37777/api/health' "$win_curl_args" 2>/dev/null; then
+    test_pass
+else
+    test_fail "expected bridge health check to keep Windows default port 37777"
+fi
+
 # ── 4. Doctor check for companion plugin ─────────────────────────────
 
 if grep -c 'companion-claude-mem' "$ORCH" >/dev/null 2>&1; then

@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Added
+
+- Add a debounced, read-only GitHub work queue hook that periodically surfaces open `nyldn/claude-octopus` issues and PRs while working in this repo, with explicit guidance to fix relevant items kindly and only push/comment/merge after user approval.
+
+### Fixed
+
+- Discover the `claude-mem` worker port from `~/.claude-mem/settings.json` or the per-UID default instead of hardcoding `37777` on Linux/macOS (#363).
+
 ---
 
 ## [9.37.1] - 2026-05-08

@@ -5,7 +5,41 @@
 
 set -euo pipefail
 
-CLAUDE_MEM_PORT="${CLAUDE_MEM_PORT:-37777}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/lib/plugin-root.sh" 2>/dev/null || true
+
+claude_mem_default_port() {
+    local discovered=""
+    local settings="${CLAUDE_MEM_SETTINGS_FILE:-${HOME:-}/.claude-mem/settings.json}"
+
+    if [[ -f "$settings" ]] && command -v jq >/dev/null 2>&1; then
+        discovered=$(jq -r '.CLAUDE_MEM_WORKER_PORT // empty' "$settings" 2>/dev/null || true)
+        case "$discovered" in
+            ''|*[!0-9]*) discovered="" ;;
+        esac
+    fi
+
+    if [[ -n "$discovered" ]]; then
+        printf '%s\n' "$discovered"
+        return 0
+    fi
+
+    # claude-mem uses a fixed worker port on Windows; Linux/macOS use
+    # 37700 + (uid % 100). Preserve Windows while avoiding a stale Linux default.
+    if declare -f octo_is_windows_git_bash >/dev/null 2>&1 && octo_is_windows_git_bash; then
+        printf '37777\n'
+        return 0
+    fi
+
+    local uid=""
+    uid=$(id -u 2>/dev/null || true)
+    case "$uid" in
+        ''|*[!0-9]*) printf '37777\n' ;;
+        *) printf '%s\n' "$((37700 + uid % 100))" ;;
+    esac
+}
+
+CLAUDE_MEM_PORT="${CLAUDE_MEM_PORT:-$(claude_mem_default_port)}"
 CLAUDE_MEM_HOST="${CLAUDE_MEM_HOST:-localhost}"
 CLAUDE_MEM_URL="http://${CLAUDE_MEM_HOST}:${CLAUDE_MEM_PORT}"
 CLAUDE_MEM_TIMEOUT=3  # seconds — fast fail
