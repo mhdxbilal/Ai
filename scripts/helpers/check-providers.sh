@@ -6,7 +6,7 @@
 # Output format: one line per provider, "name:available" or "name:missing"
 # Exit code: always 0 (availability is informational, not an error)
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 source "${SCRIPT_DIR}/../lib/cursor-agent.sh" 2>/dev/null || true
 
 cursor_agent_status="missing"
