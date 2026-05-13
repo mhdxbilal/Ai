@@ -4,7 +4,10 @@
 
 set -eo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Resolve physical path so the fallback `dirname "$SCRIPT_DIR"` plugin_root
+# (used when CLAUDE_PLUGIN_ROOT is unset) is the real install path rather than
+# the convenience symlink — prevents self-referential symlink creation. See #371.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 source "${SCRIPT_DIR}/lib/session-id.sh" 2>/dev/null || true
 source "${SCRIPT_DIR}/lib/plugin-root.sh" 2>/dev/null || true
 
