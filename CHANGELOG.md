@@ -1,5 +1,13 @@
 # Changelog
 
+## [9.38.0] - 2026-05-15
+
+### Changed
+
+- Ship marketplace install repair, workflow dispatch fixes, tangle watchdog hardening, and command packaging cleanup
+
+---
+
 ## [9.37.4] - 2026-05-13
 
 ### Added
