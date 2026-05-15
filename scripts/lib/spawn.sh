@@ -881,6 +881,18 @@ ${heuristic_ctx}"
         # Ensure file is fully written before background process exits
         sync
 
+        # Write completion marker — used by tangle_develop to detect thread end
+        # without relying on kill -0 (which tracks wrapper PID, not provider PID)
+        local _spawn_exit="${exit_code:-0}"
+        local _done_dir="${WORKSPACE_DIR:-${HOME}/.claude-octopus}/.octo/agents"
+        local _done_tmp="${_done_dir}/${task_id}.done.tmp.$$"
+        local _done_file="${_done_dir}/${task_id}.done"
+        if ! mkdir -p "$_done_dir" 2>/dev/null \
+           || ! { echo "$_spawn_exit" > "$_done_tmp" && mv -f "$_done_tmp" "$_done_file"; } 2>/dev/null; then
+            log WARN "Failed to write completion marker for $task_id (exit=$_spawn_exit)"
+            rm -f "$_done_tmp" 2>/dev/null || true
+        fi
+
         # v8.19.0: Cleanup heartbeat (self-terminating monitor handles this too)
         cleanup_heartbeat "$$" 2>/dev/null || true
     ) &
