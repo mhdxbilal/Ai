@@ -148,7 +148,8 @@ Good criteria are actionable commands or specific, observable states that the ag
 After the user confirms the criteria, hold them as a named list in your working context — label it `DONE_CRITERIA`. Do not rely on shell variables or `export`; shell state does not persist across tool calls. The criteria must live in your conversation context so you can substitute them verbatim into the E2E verification agent prompt in the post-implementation step.
 
 Example format to keep in context:
-```
+
+```text
 DONE_CRITERIA:
 - npm test passes with no new failures (baseline: 47 passing)
 - curl -X POST /api/auth/login with valid credentials returns 200 with a JWT
@@ -249,7 +250,7 @@ fi
 **You MUST execute this command via the native shell command tool:**
 
 ```bash
-${HOME}/.claude-octopus/plugin/scripts/orchestrate.sh develop "<user's implementation request>\n\nSURGICAL_CONSTRAINT:\n- Touch only required files for the task.\n- Match existing code style and conventions.\n- Note dead code but do NOT delete it; flag it for a separate task.\n- Justify every file touched in a 'Technical Debt Observed' section within the synthesis report."
+${HOME}/.claude-octopus/plugin/scripts/orchestrate.sh develop "<user's implementation request>\n\nQuality requirements for this deliverable:\n<supplement text from Step 1b subtype detection>\n<design intelligence if found>\n\nSURGICAL_CONSTRAINT:\n- Touch only required files for the task.\n- Match existing code style and conventions.\n- Note dead code but do NOT delete it; flag it for a separate task.\n- Justify every file touched in a 'Technical Debt Observed' section within the synthesis report."
 ```
 
 **CRITICAL: You are PROHIBITED from:**
