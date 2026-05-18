@@ -1459,6 +1459,45 @@ ${obs_ctx}"
         fi
     }
 
+    _latest_embrace_output() {
+        local pattern="$1"
+        local latest
+        latest=$(ls -t $pattern 2>/dev/null | head -1) || true
+        [[ -n "$latest" && -f "$latest" ]] && printf '%s\n' "$latest"
+    }
+
+    _cleanup_embrace_exports() {
+        unset OCTOPUS_SKIP_PHASE_COST_PROMPT
+        unset OCTOPUS_WORKFLOW_PHASE
+        unset OCTOPUS_WORKFLOW_TYPE
+        unset OCTOPUS_TASK_GROUP
+        unset OCTOPUS_TOTAL_PHASES
+        unset OCTOPUS_COMPLETED_PHASES
+        unset CLAUDE_CODE_DISABLE_CRON 2>/dev/null || true
+    }
+
+    _abort_embrace_phase() {
+        local phase="$1"
+        local reason="$2"
+        local output="${3:-}"
+
+        log ERROR "EMBRACE stopped at ${phase}: ${reason}"
+        echo ""
+        echo -e "${RED:-}${_BOX_TOP}${NC:-}"
+        echo -e "${RED:-}║  EMBRACE stopped at ${phase}${NC:-}"
+        echo -e "${RED:-}${_BOX_BOT}${NC:-}"
+        echo -e "Reason: ${reason}"
+        [[ -n "$output" ]] && echo -e "Output: ${output}"
+        echo -e "Results: ${RESULTS_DIR}/"
+        echo ""
+
+        _write_embrace_session_state "$phase" "failed"
+        save_session_checkpoint "$phase" "failed" "$output"
+        handle_autonomy_checkpoint "$phase" "failed"
+        _cleanup_embrace_exports
+        return 1
+    }
+
     _write_embrace_session_state "init" "starting"
     echo ""
 
@@ -1591,8 +1630,15 @@ ${obs_ctx}"
         echo ""
         echo -e "${CYAN}[1/4] Starting PROBE phase (Discover)...${NC}"
         echo ""
-        probe_discover "$prompt"
-        probe_synthesis=$(ls -t "$RESULTS_DIR"/probe-synthesis-*.md 2>/dev/null | head -1)
+        if ! probe_discover "$prompt"; then
+            _abort_embrace_phase "probe" "probe_discover returned non-zero"
+            return 1
+        fi
+        probe_synthesis=$(_latest_embrace_output "$RESULTS_DIR"/probe-synthesis-*.md)
+        if [[ -z "$probe_synthesis" ]]; then
+            _abort_embrace_phase "probe" "missing probe synthesis artifact (expected probe-synthesis-*.md)"
+            return 1
+        fi
 
         # v7.25.0: Display phase metrics
         if command -v display_phase_metrics &> /dev/null; then
@@ -1609,7 +1655,11 @@ ${obs_ctx}"
         sleep 1
     else
         probe_synthesis=$(get_phase_output "probe")
-        [[ -z "$probe_synthesis" ]] && probe_synthesis=$(ls -t "$RESULTS_DIR"/probe-synthesis-*.md 2>/dev/null | head -1)
+        [[ -z "$probe_synthesis" ]] && probe_synthesis=$(_latest_embrace_output "$RESULTS_DIR"/probe-synthesis-*.md)
+        if [[ -z "$probe_synthesis" || ! -f "$probe_synthesis" ]]; then
+            _abort_embrace_phase "probe" "resume requested but probe synthesis artifact is missing"
+            return 1
+        fi
         log INFO "Skipping probe phase (resuming)"
     fi
 
@@ -1620,8 +1670,15 @@ ${obs_ctx}"
         echo ""
         echo -e "${CYAN}[2/4] Starting GRASP phase (Define)...${NC}"
         echo ""
-        grasp_define "$prompt" "$probe_synthesis"
-        grasp_consensus=$(ls -t "$RESULTS_DIR"/grasp-consensus-*.md 2>/dev/null | head -1)
+        if ! grasp_define "$prompt" "$probe_synthesis"; then
+            _abort_embrace_phase "grasp" "grasp_define returned non-zero" "$probe_synthesis"
+            return 1
+        fi
+        grasp_consensus=$(_latest_embrace_output "$RESULTS_DIR"/grasp-consensus-*.md)
+        if [[ -z "$grasp_consensus" ]]; then
+            _abort_embrace_phase "grasp" "missing grasp consensus artifact (expected grasp-consensus-*.md)" "$probe_synthesis"
+            return 1
+        fi
 
         # v7.25.0: Display phase metrics
         if command -v display_phase_metrics &> /dev/null; then
@@ -1638,7 +1695,11 @@ ${obs_ctx}"
         sleep 1
     else
         grasp_consensus=$(get_phase_output "grasp")
-        [[ -z "$grasp_consensus" ]] && grasp_consensus=$(ls -t "$RESULTS_DIR"/grasp-consensus-*.md 2>/dev/null | head -1)
+        [[ -z "$grasp_consensus" ]] && grasp_consensus=$(_latest_embrace_output "$RESULTS_DIR"/grasp-consensus-*.md)
+        if [[ -z "$grasp_consensus" || ! -f "$grasp_consensus" ]]; then
+            _abort_embrace_phase "grasp" "resume requested but grasp consensus artifact is missing" "$probe_synthesis"
+            return 1
+        fi
         log INFO "Skipping grasp phase (resuming)"
     fi
 
@@ -1649,8 +1710,16 @@ ${obs_ctx}"
         echo ""
         echo -e "${CYAN}[3/4] Starting TANGLE phase (Develop)...${NC}"
         echo ""
-        tangle_develop "$prompt" "$grasp_consensus"
-        tangle_validation=$(ls -t "$RESULTS_DIR"/tangle-validation-*.md 2>/dev/null | head -1)
+        if ! tangle_develop "$prompt" "$grasp_consensus"; then
+            tangle_validation=$(_latest_embrace_output "$RESULTS_DIR"/tangle-validation-*.md)
+            _abort_embrace_phase "tangle" "tangle_develop returned non-zero" "$tangle_validation"
+            return 1
+        fi
+        tangle_validation=$(_latest_embrace_output "$RESULTS_DIR"/tangle-validation-*.md)
+        if [[ -z "$tangle_validation" ]]; then
+            _abort_embrace_phase "tangle" "missing tangle validation artifact (expected tangle-validation-*.md)" "$grasp_consensus"
+            return 1
+        fi
 
         # v7.25.0: Display phase metrics
         if command -v display_phase_metrics &> /dev/null; then
@@ -1672,7 +1741,11 @@ ${obs_ctx}"
         sleep 1
     else
         tangle_validation=$(get_phase_output "tangle")
-        [[ -z "$tangle_validation" ]] && tangle_validation=$(ls -t "$RESULTS_DIR"/tangle-validation-*.md 2>/dev/null | head -1)
+        [[ -z "$tangle_validation" ]] && tangle_validation=$(_latest_embrace_output "$RESULTS_DIR"/tangle-validation-*.md)
+        if [[ -z "$tangle_validation" || ! -f "$tangle_validation" ]]; then
+            _abort_embrace_phase "tangle" "resume requested but tangle validation artifact is missing" "$grasp_consensus"
+            return 1
+        fi
         log INFO "Skipping tangle phase (resuming)"
     fi
 
@@ -1682,7 +1755,10 @@ ${obs_ctx}"
     echo ""
     echo -e "${CYAN}[4/4] Starting INK phase (Deliver)...${NC}"
     echo ""
-    ink_deliver "$prompt" "$tangle_validation"
+    if ! ink_deliver "$prompt" "$tangle_validation"; then
+        _abort_embrace_phase "ink" "ink_deliver returned non-zero" "$tangle_validation"
+        return 1
+    fi
 
     # v7.25.0: Display phase metrics
     if command -v display_phase_metrics &> /dev/null; then
@@ -1691,7 +1767,11 @@ ${obs_ctx}"
 
     # v8.14.0: Capture phase context in persistent state
     local ink_output
-    ink_output=$(ls -t "$RESULTS_DIR"/delivery-*.md 2>/dev/null | head -1)
+    ink_output=$(_latest_embrace_output "$RESULTS_DIR"/delivery-*.md)
+    if [[ -z "$ink_output" ]]; then
+        _abort_embrace_phase "ink" "missing delivery artifact (expected delivery-*.md)" "$tangle_validation"
+        return 1
+    fi
     update_context "deliver" "$(head -20 "$ink_output" 2>/dev/null | tr '\n' ' ')" 2>/dev/null || true
 
     OCTOPUS_COMPLETED_PHASES=4
@@ -1750,11 +1830,5 @@ ${obs_ctx}"
     fi
 
     # Clean up exported flags so they don't affect subsequent standalone calls
-    unset OCTOPUS_SKIP_PHASE_COST_PROMPT
-    unset OCTOPUS_WORKFLOW_PHASE
-    unset OCTOPUS_WORKFLOW_TYPE
-    unset OCTOPUS_TASK_GROUP
-    unset OCTOPUS_TOTAL_PHASES
-    unset OCTOPUS_COMPLETED_PHASES
-    unset CLAUDE_CODE_DISABLE_CRON 2>/dev/null || true
+    _cleanup_embrace_exports
 }
