@@ -54,4 +54,15 @@ else
     test_fail "expected exit 64 with clear no-prompt error; status=$empty_status output=$empty_output"
 fi
 
+test_case "vibe-exec fails clearly on whitespace-only stdin prompt"
+set +e
+whitespace_output=$(printf ' \t\n ' | PATH="$MOCK_BIN_DIR:$PATH" "$HELPER" --output text 2>&1)
+whitespace_status=$?
+set -e
+if [[ "$whitespace_status" -eq 64 && "$whitespace_output" == *"no prompt provided on stdin"* ]]; then
+    test_pass
+else
+    test_fail "expected exit 64 with clear whitespace-only prompt error; status=$whitespace_status output=$whitespace_output"
+fi
+
 test_summary
