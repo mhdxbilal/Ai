@@ -119,6 +119,24 @@ $challenge_result
             fi
         fi
 
+        # Always leave a validation artifact before any branch can abort,
+        # escalate, or retry. Embrace treats this file as the transition
+        # contract between Develop and Deliver.
+        cat > "$validation_file" << EOF
+# TANGLE Phase Validation Report
+## Task: $original_prompt
+## Generated: $(date)
+
+### Quality Gate: ${gate_status}
+- Success Rate: ${success_rate}% (threshold: ${QUALITY_THRESHOLD}%)
+- Successful: ${success_count}/${total} providers
+- Failed: ${fail_count}/${total} providers
+- Retry Attempts: ${quality_retry_count}/${MAX_QUALITY_RETRIES}
+
+### Subtask Results
+$results
+EOF
+
         # ═══════════════════════════════════════════════════════════════════════
         # CONDITIONAL BRANCHING - Quality gate decision tree
         # ═══════════════════════════════════════════════════════════════════════

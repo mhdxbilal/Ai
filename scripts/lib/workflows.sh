@@ -1349,6 +1349,135 @@ EOF
     echo ""
 }
 
+embrace_contract_mode_enabled() {
+    [[ "${OCTOPUS_EMBRACE_CONTRACTS:-true}" == "true" || "${OCTOPUS_CONFORMANCE_MODE:-false}" == "true" ]]
+}
+
+embrace_latest_artifact() {
+    local pattern="$1"
+    ls -t $pattern 2>/dev/null | head -1
+}
+
+embrace_require_phase_artifact() {
+    local phase="$1"
+    local pattern="$2"
+    local artifact
+    artifact=$(embrace_latest_artifact "$pattern")
+
+    if [[ -z "$artifact" || ! -s "$artifact" ]]; then
+        log ERROR "Embrace contract violation: missing ${phase} artifact (${pattern})"
+        return 1
+    fi
+
+    printf '%s\n' "$artifact"
+}
+
+embrace_tangle_allows_delivery() {
+    local validation_file="$1"
+
+    if [[ -z "$validation_file" || ! -f "$validation_file" ]]; then
+        log ERROR "Embrace contract violation: missing tangle validation artifact"
+        return 1
+    fi
+
+    if grep -q "Quality Gate: FAILED" "$validation_file" 2>/dev/null; then
+        log ERROR "Embrace contract violation: tangle failed; refusing to start delivery"
+        return 1
+    fi
+
+    return 0
+}
+
+embrace_gate_requested() {
+    local gate="$1"
+    local setting="${OCTOPUS_DEBATE_GATES:-none}"
+
+    case "$setting:$gate" in
+        both:define|both:deliver|define:define|define-develop:define|deliver:deliver|delivery:deliver)
+            return 0 ;;
+        auto:*)
+            return 1 ;;
+        *)
+            return 1 ;;
+    esac
+}
+
+embrace_run_debate_gate() {
+    local gate="$1"
+    local source_file="$2"
+    local prompt="$3"
+    local task_group="$4"
+    local gate_file="${RESULTS_DIR}/embrace-gate-${gate}-${task_group}.md"
+
+    if [[ "${OCTOPUS_CONFORMANCE_SKIP_GATE_ARTIFACT:-}" == "all" || \
+          "${OCTOPUS_CONFORMANCE_SKIP_GATE_ARTIFACT:-}" == "$gate" ]]; then
+        log WARN "Conformance mode: intentionally skipping gate artifact for ${gate}"
+        return 0
+    fi
+
+    local source_excerpt=""
+    [[ -n "$source_file" && -f "$source_file" ]] && source_excerpt=$(head -c 4000 "$source_file" 2>/dev/null || true)
+
+    local debate_output=""
+    if [[ "${OCTOPUS_CONFORMANCE_MODE:-false}" == "true" ]]; then
+        debate_output="Conformance debate gate stub: ${gate} reviewed ${source_file:-no-source}."
+    else
+        debate_output=$(run_agent_sync "claude-sonnet" "Run a concise adversarial Embrace debate gate.
+
+Gate: ${gate}
+Original task: ${prompt}
+
+Source artifact:
+${source_excerpt}
+
+Output:
+1. Biggest risks
+2. Required amendments, if any
+3. Verdict: PROCEED or STOP" 120 "code-reviewer" "embrace-gate") || {
+            debate_output="[Debate gate provider unavailable - manual review required]"
+        }
+    fi
+
+    local gate_status="PROCEED"
+    if echo "$debate_output" | grep -qiE 'verdict:[[:space:]]*STOP|status:[[:space:]]*STOP|(^|[[:space:]])STOP($|[[:space:]])'; then
+        gate_status="STOP"
+    fi
+
+    cat > "$gate_file" << EOF
+# EMBRACE Gate: ${gate}
+## Task: ${prompt}
+## Source: ${source_file}
+## Generated: $(date)
+## Status: ${gate_status}
+
+${debate_output}
+
+---
+*Embrace debate gate artifact (task group: ${task_group})*
+EOF
+
+    log INFO "Debate gate artifact: $gate_file"
+    echo -e "${GREEN}✓${NC} Debate gate saved to: $gate_file"
+}
+
+embrace_require_gate_artifact() {
+    local gate="$1"
+    local task_group="$2"
+    local gate_file="${RESULTS_DIR}/embrace-gate-${gate}-${task_group}.md"
+
+    if [[ ! -s "$gate_file" ]]; then
+        log ERROR "Embrace contract violation: debate gate requested but artifact missing (${gate_file})"
+        return 1
+    fi
+
+    if grep -q "Status: STOP" "$gate_file" 2>/dev/null; then
+        log ERROR "Embrace debate gate blocked workflow: ${gate}"
+        return 1
+    fi
+
+    return 0
+}
+
 # ── Extracted from orchestrate.sh ──
 format_workflow_banner() {
     local workflow="$1"
@@ -1385,6 +1514,22 @@ embrace_full_workflow() {
     echo ""
 
     log INFO "Starting complete Double Diamond workflow"
+
+    if [[ "${OCTOPUS_CONFORMANCE_MODE:-false}" == "true" ]]; then
+        export OCTOPUS_SKIP_COST_PROMPT=true
+        export OCTOPUS_SKIP_PHASE_COST_PROMPT=true
+        export OCTOPUS_SKIP_PROVIDER_PROBES=true
+        export SKIP_SMOKE_TEST=true
+        export OCTOPUS_ANTISYCOPHANCY=false
+        export OCTOPUS_YAML_RUNTIME=disabled
+        export AUTONOMY_MODE="${AUTONOMY_MODE:-autonomous}"
+        export ON_FAIL_ACTION="${ON_FAIL_ACTION:-abort}"
+    elif embrace_contract_mode_enabled && [[ "${OCTOPUS_YAML_RUNTIME:-auto}" == "auto" ]]; then
+        # The hardcoded runner is currently the path with transition contracts
+        # and debate-gate artifact enforcement. YAML can still be forced via
+        # OCTOPUS_YAML_RUNTIME=enabled when explicitly validating that runtime.
+        export OCTOPUS_YAML_RUNTIME=disabled
+    fi
 
     # v8.49.0: Clean up expired results from prior runs
     cleanup_old_results
@@ -1591,8 +1736,17 @@ ${obs_ctx}"
         echo ""
         echo -e "${CYAN}[1/4] Starting PROBE phase (Discover)...${NC}"
         echo ""
-        probe_discover "$prompt"
-        probe_synthesis=$(ls -t "$RESULTS_DIR"/probe-synthesis-*.md 2>/dev/null | head -1)
+        local probe_rc=0
+        probe_discover "$prompt" || probe_rc=$?
+        if ! probe_synthesis=$(embrace_require_phase_artifact "probe" "$RESULTS_DIR/probe-synthesis-*.md"); then
+            _write_embrace_session_state "probe" "failed"
+            return 1
+        fi
+        if [[ $probe_rc -ne 0 ]]; then
+            log ERROR "PROBE phase failed after writing artifact: $probe_synthesis"
+            _write_embrace_session_state "probe" "failed"
+            return "$probe_rc"
+        fi
 
         # v7.25.0: Display phase metrics
         if command -v display_phase_metrics &> /dev/null; then
@@ -1620,8 +1774,17 @@ ${obs_ctx}"
         echo ""
         echo -e "${CYAN}[2/4] Starting GRASP phase (Define)...${NC}"
         echo ""
-        grasp_define "$prompt" "$probe_synthesis"
-        grasp_consensus=$(ls -t "$RESULTS_DIR"/grasp-consensus-*.md 2>/dev/null | head -1)
+        local grasp_rc=0
+        grasp_define "$prompt" "$probe_synthesis" || grasp_rc=$?
+        if ! grasp_consensus=$(embrace_require_phase_artifact "grasp" "$RESULTS_DIR/grasp-consensus-*.md"); then
+            _write_embrace_session_state "grasp" "failed"
+            return 1
+        fi
+        if [[ $grasp_rc -ne 0 ]]; then
+            log ERROR "GRASP phase failed after writing artifact: $grasp_consensus"
+            _write_embrace_session_state "grasp" "failed"
+            return "$grasp_rc"
+        fi
 
         # v7.25.0: Display phase metrics
         if command -v display_phase_metrics &> /dev/null; then
@@ -1635,6 +1798,10 @@ ${obs_ctx}"
         _write_embrace_session_state "grasp" "completed"
         save_session_checkpoint "grasp" "completed" "$grasp_consensus"
         handle_autonomy_checkpoint "grasp" "completed"
+        if embrace_gate_requested "define"; then
+            embrace_run_debate_gate "define-develop" "$grasp_consensus" "$prompt" "$task_group"
+            embrace_require_gate_artifact "define-develop" "$task_group" || return 1
+        fi
         sleep 1
     else
         grasp_consensus=$(get_phase_output "grasp")
@@ -1649,8 +1816,12 @@ ${obs_ctx}"
         echo ""
         echo -e "${CYAN}[3/4] Starting TANGLE phase (Develop)...${NC}"
         echo ""
-        tangle_develop "$prompt" "$grasp_consensus"
-        tangle_validation=$(ls -t "$RESULTS_DIR"/tangle-validation-*.md 2>/dev/null | head -1)
+        local tangle_rc=0
+        tangle_develop "$prompt" "$grasp_consensus" || tangle_rc=$?
+        if ! tangle_validation=$(embrace_require_phase_artifact "tangle" "$RESULTS_DIR/tangle-validation-*.md"); then
+            _write_embrace_session_state "tangle" "failed"
+            return 1
+        fi
 
         # v7.25.0: Display phase metrics
         if command -v display_phase_metrics &> /dev/null; then
@@ -1660,7 +1831,7 @@ ${obs_ctx}"
         # Check quality gate status for autonomy
         local tangle_status="completed"
         if grep -q "Quality Gate: FAILED" "$tangle_validation" 2>/dev/null; then
-            tangle_status="warning"
+            tangle_status="failed"
         fi
         # v8.14.0: Capture phase context in persistent state
         update_context "develop" "$(head -20 "$tangle_validation" 2>/dev/null | tr '\n' ' ')" 2>/dev/null || true
@@ -1669,6 +1840,15 @@ ${obs_ctx}"
         _write_embrace_session_state "tangle" "$tangle_status"
         save_session_checkpoint "tangle" "$tangle_status" "$tangle_validation"
         handle_autonomy_checkpoint "tangle" "$tangle_status"
+        if [[ $tangle_rc -ne 0 ]]; then
+            log ERROR "TANGLE phase failed; stopping before Deliver"
+            return "$tangle_rc"
+        fi
+        embrace_tangle_allows_delivery "$tangle_validation" || return 1
+        if embrace_gate_requested "deliver"; then
+            embrace_run_debate_gate "deliver" "$tangle_validation" "$prompt" "$task_group"
+            embrace_require_gate_artifact "deliver" "$task_group" || return 1
+        fi
         sleep 1
     else
         tangle_validation=$(get_phase_output "tangle")
@@ -1676,13 +1856,20 @@ ${obs_ctx}"
         log INFO "Skipping tangle phase (resuming)"
     fi
 
+    embrace_tangle_allows_delivery "$tangle_validation" || return 1
+
     # Phase 4: INK (Deliver)
     export OCTOPUS_WORKFLOW_PHASE="ink"
     _write_embrace_session_state "ink" "running"
     echo ""
     echo -e "${CYAN}[4/4] Starting INK phase (Deliver)...${NC}"
     echo ""
-    ink_deliver "$prompt" "$tangle_validation"
+    local ink_rc=0
+    ink_deliver "$prompt" "$tangle_validation" || ink_rc=$?
+    if [[ $ink_rc -ne 0 ]]; then
+        _write_embrace_session_state "ink" "failed"
+        return "$ink_rc"
+    fi
 
     # v7.25.0: Display phase metrics
     if command -v display_phase_metrics &> /dev/null; then
@@ -1691,7 +1878,10 @@ ${obs_ctx}"
 
     # v8.14.0: Capture phase context in persistent state
     local ink_output
-    ink_output=$(ls -t "$RESULTS_DIR"/delivery-*.md 2>/dev/null | head -1)
+    ink_output=$(embrace_require_phase_artifact "ink" "$RESULTS_DIR/delivery-*.md") || {
+        _write_embrace_session_state "ink" "failed"
+        return 1
+    }
     update_context "deliver" "$(head -20 "$ink_output" 2>/dev/null | tr '\n' ' ')" 2>/dev/null || true
 
     OCTOPUS_COMPLETED_PHASES=4

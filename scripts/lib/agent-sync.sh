@@ -277,6 +277,14 @@ ${provider_ctx}"
 
     stop_quota_watcher "$_quota_watcher_pid"
 
+    # Codex can emit the useful final response on stderr while exiting 0 in
+    # non-interactive dispatch contexts. Treat that as degraded usable output
+    # instead of losing the response downstream.
+    if [[ "$agent_type" == codex* && -z "$output" && -s "$temp_err" ]] && \
+       ! octo_file_has_provider_rejection "$temp_err"; then
+        output=$(cat "$temp_err")
+    fi
+
     # Tail-bias: the deliverable summary lives at the end of codex-style output.
     local _max_bytes="${OCTOPUS_AGENT_MAX_OUTPUT_BYTES:-262144}"
     local _sync_output_truncated=false
