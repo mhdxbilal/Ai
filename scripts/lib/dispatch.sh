@@ -116,6 +116,11 @@ get_agent_command() {
             # does NOT interpret quotes; literal " would be passed to --model.
             echo "agent --trust --output-format text --model ${model}"
             ;;
+        vibe|vibe-research)  # Mistral Vibe — interactive CLI (model in ~/.vibe/config.toml)
+            # auto-approve is implicit in -p mode. -p MUST be last: it takes the
+            # next arg as the prompt, so the caller-appended prompt binds to it.
+            echo "vibe --output text -p"
+            ;;
         opencode|opencode-fast|opencode-research)  # v9.11.0: OpenCode CLI — multi-provider router
             model=$(get_agent_model "$agent_type" "$phase" "$role")
             # Uses default text output (ANSI stripped by caller) — consistent with other providers
