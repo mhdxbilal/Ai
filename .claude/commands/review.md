@@ -18,6 +18,10 @@ Three review entry points coexist in Claude Code v2.1.111+ — pick the right on
 | Claude-native `/review` | Single-turn, current diff | Claude only | Ordinary review, one perspective suffices |
 | `/ultrareview` (CC v2.1.111+) | Cloud, parallel multi-agent | Claude parallelism | Pre-merge PR review without leaving CC |
 | `/octo:review` (this) | Multi-LLM, inline PR comments | Codex + Gemini + Claude | Provider diversity, adversarial cross-check, stricter escalation |
+| `/octo:review --deep` | Standard review + Opus second pass | Codex → Claude Opus 4.7 | Opt-in deeper analysis: logic gaps, intent drift, architectural issues |
+
+### `--deep` flag behaviour
+When `--deep` is passed, run the standard Codex review first, then send the full review output to **Claude Opus 4.7** with this prompt addition: *"You are a senior reviewer doing a second pass. The standard review is above. Identify: (1) logic gaps the first pass missed, (2) whether the solution matches the original intent, (3) architectural drift from the codebase's existing patterns. Be specific — only flag issues the standard review did not already catch."* Deliver both passes to the user, clearly labelled **Standard (Codex)** and **Deep (Opus)**.
 
 Use `/octo:review` when the user explicitly wants enhanced multi-LLM review, multiple model opinions, provider diversity, or stricter escalation workflows. If CC v2.1.111+ and the user just says "review this", prefer `/ultrareview` unless provider diversity is specifically requested.
 
