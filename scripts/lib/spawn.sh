@@ -542,6 +542,10 @@ ${heuristic_ctx}"
         if [[ "$agent_type" == gemini* ]] || [[ "$agent_type" == cursor-agent* ]] || [[ "$agent_type" == copilot* ]] || [[ "$agent_type" == qwen* ]]; then
             cmd_array+=(-p "")
         fi
+        # Belt-and-suspenders: bypass Gemini's interactive trust check in headless mode (#405)
+        if [[ "$agent_type" == gemini* ]]; then
+            cmd_array+=(--skip-trust)
+        fi
 
         local auth_attempt=0
         local exit_code=0
@@ -644,6 +648,12 @@ ${heuristic_ctx}"
                     -e '^Loaded cached credentials' \
                     -e '^Run /mcp' \
                     "$temp_output" >> "$result_file" 2>/dev/null || cat "$temp_output" >> "$result_file"
+            fi
+            if [[ "$agent_type" == codex* ]] \
+                && ! grep -q '[[:alnum:]]' "$temp_output" 2>/dev/null \
+                && type octo_file_has_codex_recoverable_stderr >/dev/null 2>&1 \
+                && octo_file_has_codex_recoverable_stderr "$temp_errors"; then
+                echo "(Codex response was emitted on stderr; see Warnings/Errors transcript below.)" >> "$result_file"
             fi
 
             # v8.7.0: Add trust marker for external CLI output

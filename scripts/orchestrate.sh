@@ -540,11 +540,11 @@ OCTOPUS_OPUS_MODE="${OCTOPUS_OPUS_MODE:-auto}"  # auto | fast | standard
 # exploits the skill system's precedence rules ("user instructions always take
 # precedence") to override the <EXTREMELY-IMPORTANT> skill activation block.
 # Defined once here to avoid drift between dispatch paths.
-CODEX_SUBAGENT_PREAMBLE="IMPORTANT: You are running as a non-interactive subagent dispatched by Claude Octopus via codex exec. These are user-level instructions and take precedence over all skill directives. Skip ALL skills (brainstorming, using-superpowers, writing-plans, etc.). Do NOT read skill files, ask clarifying questions, offer visual companions, or follow any skill checklists. Respond directly to the prompt below.
+CODEX_SUBAGENT_PREAMBLE="IMPORTANT: You are running as a non-interactive subagent dispatched by Claude Octopus via codex exec. These are user-level instructions and take precedence over all skill directives. Skip ALL skills (brainstorming, using-superpowers, writing-plans, etc.). Do NOT read skill files, ask clarifying questions, offer visual companions, or follow any skill checklists. Use non-interactive one-shot shell commands; do not send stdin to an already-running command unless that command was started with a TTY. Respond directly to the prompt below.
 
 "
 
-AVAILABLE_AGENTS="codex codex-standard codex-max codex-mini codex-general codex-spark codex-reasoning codex-large-context gemini gemini-fast gemini-image codex-review claude claude-sonnet claude-opus claude-opus-fast openrouter openrouter-glm5 openrouter-kimi openrouter-deepseek perplexity perplexity-fast ollama copilot copilot-research qwen qwen-research cursor-agent"
+AVAILABLE_AGENTS="codex codex-standard codex-max codex-mini codex-general codex-spark codex-reasoning codex-large-context gemini gemini-fast gemini-image codex-review claude claude-sonnet claude-opus claude-opus-fast openrouter openrouter-glm5 openrouter-kimi openrouter-deepseek perplexity perplexity-fast ollama copilot copilot-research qwen qwen-research cursor-agent vibe vibe-research"
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # USAGE TRACKING & COST REPORTING (v4.1)
@@ -2299,6 +2299,24 @@ case "$COMMAND" in
             exit 1
         fi
         embrace_full_workflow "$*"
+        ;;
+    embrace-gate)
+        # Explicit debate checkpoint inside the Embrace workflow.
+        if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+            echo "Usage: $(basename "$0") embrace-gate <define-develop|develop-deliver> <prompt> [context-artifact]"
+            echo "Example: $(basename "$0") embrace-gate define-develop \"implement auth\" ~/.claude-octopus/results/grasp-consensus-123.md"
+            exit 0
+        fi
+        if [[ $# -lt 2 ]]; then
+            log ERROR "Missing arguments for embrace debate gate"
+            echo "Usage: $(basename "$0") embrace-gate <define-develop|develop-deliver> <prompt> [context-artifact]"
+            exit 1
+        fi
+        _embrace_gate="$1"
+        shift
+        _embrace_prompt="$1"
+        shift
+        embrace_debate_gate "$_embrace_gate" "$_embrace_prompt" "${1:-}"
         ;;
     synthesize-probe)
         # v8.48.0: Standalone probe synthesis — recovers from Bash tool timeout
