@@ -1,6 +1,12 @@
 # Changelog
 
-## [9.38.1] - 2026-05-19
+## [9.38.1] - 2026-05-21
+
+Patch release covering the issue/PR triage queue after v9.38.0.
+
+### Added
+
+- Add Mistral Vibe as a first-class provider, including setup/doctor detection, dispatch support, circuit-breaker visibility, and prompt validation (#402).
 
 ### Fixed
 
@@ -8,6 +14,13 @@
 - probe: compact synthesis fallback — bounded context and sanitized failure markers in synthesis (#396)
 - ink: compact delivery context — bounded delivery bundle, sanitized upstream failure markers (#394)
 - tangle: fall back to direct execution when decomposition produces no parseable subtasks (#391)
+- tangle: preserve original task context in subtasks, require explicit disjoint write scopes, and accept root-level files such as `Makefile` (#390).
+- tangle: validate explicit file coverage with exact file-token matching and require worktree evidence for implementation tasks (#393).
+- embrace: stop on missing phase outputs, enforce requested debate gates, and reuse centralized cleanup for YAML runtime completion (#392).
+- codex: document current non-interactive `codex exec` usage and include recovered stderr transcripts in result files (#387).
+- skills: support directory-format Claude skills across marketplace sync, smoke tests, OpenClaw, Codex generation, release validation, and agent skill loading (#397, closes #395).
+- review publishing: respect explicit PR targets before branch fallback so review comments land on the intended PR (#406, closes #405).
+- provider defaults: cover OpenCode namespace defaults in regression tests (#403).
 
 ---
 
