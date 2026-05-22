@@ -411,6 +411,31 @@ test_council_critical_veto_aborts_implementation_run() {
     fi
 }
 
+test_council_cost_cap_aborts_before_fanout() {
+    test_case "Council cost cap aborts before fanout"
+    load_council_lib || return 1
+
+    local tmp_dir
+    tmp_dir="$(mktemp -d "$TEST_TMP_DIR/council-cost-cap.XXXXXX")"
+
+    OCTOPUS_COUNCIL_FIXTURE=full-success \
+    OCTOPUS_COUNCIL_PROVIDER_FIXTURE='claude:available,codex:available,gemini:available' \
+        council_run --max-cost 0.00 --output-dir "$tmp_dir" "Should we use Redis?"
+
+    local run_dir summary response_count
+    run_dir="$(find "$tmp_dir" -mindepth 1 -maxdepth 1 -type d | head -1)"
+    summary="$run_dir/summary.json"
+    response_count="$(find "$run_dir/responses" -type f -name '*.md' | wc -l | tr -d ' ')"
+
+    if [[ "$response_count" -eq 0 ]] &&
+       jq -e '.status == "aborted" and .budget.aborted_for_cost == true and .quorum.met == false' "$summary" >/dev/null; then
+        test_pass
+    else
+        test_fail "cost cap should abort before fanout"
+        return 1
+    fi
+}
+
 test_council_command_files_are_registered
 test_council_orchestrate_route_exists
 test_council_defaults_are_depth_aware
@@ -431,4 +456,5 @@ test_council_fixture_run_writes_phase_artifacts
 test_council_plan_only_writes_implementation_plan_without_handoff
 test_council_after_approval_does_not_handoff_without_gate
 test_council_critical_veto_aborts_implementation_run
+test_council_cost_cap_aborts_before_fanout
 test_summary

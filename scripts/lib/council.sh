@@ -31,6 +31,7 @@ COUNCIL_ROSTER_JSON=""
 COUNCIL_RESPONSES_RECEIVED=""
 COUNCIL_QUORUM_MET=""
 COUNCIL_IMPLEMENTATION_PLAN_WRITTEN=""
+COUNCIL_ABORTED_FOR_COST=""
 
 council_usage() {
     cat << EOF
@@ -86,6 +87,7 @@ council_reset_defaults() {
     COUNCIL_RESPONSES_RECEIVED="0"
     COUNCIL_QUORUM_MET="false"
     COUNCIL_IMPLEMENTATION_PLAN_WRITTEN="false"
+    COUNCIL_ABORTED_FOR_COST="false"
 }
 
 council_plugin_root() {
@@ -219,6 +221,11 @@ council_estimate_cost() {
             printf "%.4f", cost
         }')
     COUNCIL_ESTIMATED_COST="$estimate"
+}
+
+council_cost_exceeds_cap() {
+    council_estimate_cost
+    awk -v estimated="$COUNCIL_ESTIMATED_COST" -v max="$COUNCIL_MAX_COST" 'BEGIN { exit !(estimated > max) }'
 }
 
 council_snapshot_age_days() {
@@ -928,6 +935,7 @@ council_write_summary_json() {
         --arg responses_received "$COUNCIL_RESPONSES_RECEIVED" \
         --arg quorum_met "$COUNCIL_QUORUM_MET" \
         --arg implementation_plan_written "$COUNCIL_IMPLEMENTATION_PLAN_WRITTEN" \
+        --arg aborted_for_cost "$COUNCIL_ABORTED_FOR_COST" \
         '{
           run_id: $run_id,
           command: "council",
@@ -948,7 +956,7 @@ council_write_summary_json() {
           budget: {
             max_cost_usd: ($max_cost | tonumber),
             estimated_cost_usd: ($estimated_cost | tonumber),
-            aborted_for_cost: false
+            aborted_for_cost: ($aborted_for_cost == "true")
           },
           quorum: {
             required_non_chair: (if $depth == "quick" then 1 else 2 end),
@@ -1012,6 +1020,14 @@ council_run() {
 
     council_build_roster
     council_write_config_json || return 1
+
+    if council_cost_exceeds_cap; then
+        COUNCIL_ABORTED_FOR_COST="true"
+        council_write_summary_json "aborted" || return 1
+        echo "Council stopped before fanout: estimated cost exceeds --max-cost. See ${COUNCIL_RUN_DIR}/summary.json"
+        return 0
+    fi
+
     council_run_advice_phase
 
     if [[ "$COUNCIL_QUORUM_MET" != "true" ]]; then
