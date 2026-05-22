@@ -98,9 +98,88 @@ test_council_dry_run_writes_summary_json() {
     fi
 }
 
+test_council_explicit_members_override_depth() {
+    test_case "Explicit members override depth member preset"
+    load_council_lib || return 1
+
+    council_parse_args --depth quick --members 7 --dry-run "Review auth"
+
+    [[ "$COUNCIL_RESOLVED_MEMBERS" == "7" ]] || { test_fail "explicit members should win"; return 1; }
+    [[ "$COUNCIL_MEMBER_OVERRIDE_WARNING" == "true" ]] || { test_fail "missing member override warning"; return 1; }
+    test_pass
+}
+
+test_council_dry_run_maps_implementation_and_worktree() {
+    test_case "Council dry-run maps implementation and worktree flags"
+    load_council_lib || return 1
+
+    local tmp_dir
+    tmp_dir="$(mktemp -d "$TEST_TMP_DIR/council-impl.XXXXXX")"
+
+    council_run --dry-run --goal implement --implement after-approval --worktree on --output-dir "$tmp_dir" "Refactor auth flow"
+
+    local summary
+    summary="$(find "$tmp_dir" -name summary.json -type f | head -1)"
+    [[ -n "$summary" ]] || { test_fail "summary.json not written"; return 1; }
+
+    if jq -e '.implementation.permission == "after-approval" and .implementation.worktree == "on"' "$summary" >/dev/null; then
+        test_pass
+    else
+        test_fail "implementation/worktree mapping mismatch"
+        return 1
+    fi
+}
+
+test_council_dry_run_has_multi_seat_recommendation_and_cost() {
+    test_case "Council dry-run has multiple seats and positive cost estimate"
+    load_council_lib || return 1
+
+    local tmp_dir
+    tmp_dir="$(mktemp -d "$TEST_TMP_DIR/council-cost.XXXXXX")"
+
+    council_run --dry-run --depth quick --output-dir "$tmp_dir" "Should we use Redis?"
+
+    local summary
+    summary="$(find "$tmp_dir" -name summary.json -type f | head -1)"
+    [[ -n "$summary" ]] || { test_fail "summary.json not written"; return 1; }
+
+    if jq -e '(.council | length) >= 2 and .budget.estimated_cost_usd > 0' "$summary" >/dev/null; then
+        test_pass
+    else
+        test_fail "missing multi-seat recommendation or positive cost"
+        return 1
+    fi
+}
+
+test_council_critical_veto_fixture_marks_veto() {
+    test_case "Critical veto fixture marks veto path"
+    load_council_lib || return 1
+
+    local tmp_dir
+    tmp_dir="$(mktemp -d "$TEST_TMP_DIR/council-veto.XXXXXX")"
+
+    OCTOPUS_COUNCIL_FIXTURE=critical-veto \
+        council_run --dry-run --goal implement --output-dir "$tmp_dir" "Ship this without tests"
+
+    local summary
+    summary="$(find "$tmp_dir" -name summary.json -type f | head -1)"
+    [[ -n "$summary" ]] || { test_fail "summary.json not written"; return 1; }
+
+    if jq -e '.veto.triggered == true and .veto.severity == "critical"' "$summary" >/dev/null; then
+        test_pass
+    else
+        test_fail "critical veto fixture did not trigger veto"
+        return 1
+    fi
+}
+
 test_council_command_files_are_registered
 test_council_orchestrate_route_exists
 test_council_defaults_are_depth_aware
 test_council_rejects_non_usd_budget
 test_council_dry_run_writes_summary_json
+test_council_explicit_members_override_depth
+test_council_dry_run_maps_implementation_and_worktree
+test_council_dry_run_has_multi_seat_recommendation_and_cost
+test_council_critical_veto_fixture_marks_veto
 test_summary

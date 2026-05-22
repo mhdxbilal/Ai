@@ -55,10 +55,10 @@ test_council_fixture_is_test_only_and_recorded() {
     summary="$(find "$tmp_dir" -name summary.json -type f | head -1)"
     [[ -n "$summary" ]] || { test_fail "summary.json not written"; return 1; }
 
-    if jq -e '.fixture == "critical-veto"' "$summary" >/dev/null; then
+    if jq -e '.fixture == "critical-veto" and .veto.triggered == true and .veto.severity == "critical"' "$summary" >/dev/null; then
         test_pass
     else
-        test_fail "fixture mode not recorded"
+        test_fail "fixture mode or veto path not recorded"
         return 1
     fi
 }

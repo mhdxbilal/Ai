@@ -21,6 +21,8 @@ COUNCIL_TASK=""
 COUNCIL_RUN_DIR=""
 COUNCIL_RUN_ID=""
 COUNCIL_FIXTURE=""
+COUNCIL_MEMBER_OVERRIDE_WARNING=""
+COUNCIL_ESTIMATED_COST=""
 
 council_usage() {
     cat << EOF
@@ -66,6 +68,8 @@ council_reset_defaults() {
     COUNCIL_RUN_DIR=""
     COUNCIL_RUN_ID=""
     COUNCIL_FIXTURE="${OCTOPUS_COUNCIL_FIXTURE:-}"
+    COUNCIL_MEMBER_OVERRIDE_WARNING="false"
+    COUNCIL_ESTIMATED_COST="0.00"
 }
 
 council_error_usage() {
@@ -99,23 +103,64 @@ council_validate_budget() {
 }
 
 council_resolve_defaults() {
+    local depth_default_members=""
+    local depth_default_cost=""
+    case "$COUNCIL_DEPTH" in
+        quick)
+            depth_default_members="3"
+            depth_default_cost="0.50"
+            ;;
+        standard)
+            depth_default_members="5"
+            depth_default_cost="2.00"
+            ;;
+        deep)
+            depth_default_members="7"
+            depth_default_cost="5.00"
+            ;;
+    esac
+
     if [[ "$COUNCIL_MEMBERS" == "auto" ]]; then
-        case "$COUNCIL_DEPTH" in
-            quick) COUNCIL_RESOLVED_MEMBERS="3" ;;
-            standard) COUNCIL_RESOLVED_MEMBERS="5" ;;
-            deep) COUNCIL_RESOLVED_MEMBERS="7" ;;
-        esac
+        COUNCIL_RESOLVED_MEMBERS="$depth_default_members"
     else
         COUNCIL_RESOLVED_MEMBERS="$COUNCIL_MEMBERS"
+        if [[ "$COUNCIL_MEMBERS" != "$depth_default_members" ]]; then
+            COUNCIL_MEMBER_OVERRIDE_WARNING="true"
+        fi
     fi
 
     if [[ -z "$COUNCIL_MAX_COST" ]]; then
-        case "$COUNCIL_DEPTH" in
-            quick) COUNCIL_MAX_COST="0.50" ;;
-            standard) COUNCIL_MAX_COST="2.00" ;;
-            deep) COUNCIL_MAX_COST="5.00" ;;
-        esac
+        COUNCIL_MAX_COST="$depth_default_cost"
     fi
+}
+
+council_estimate_cost() {
+    local prompt_chars=${#COUNCIL_TASK}
+    local input_tokens=$(( (prompt_chars + 3) / 4 ))
+    input_tokens=$(( (input_tokens * 125 + 99) / 100 ))
+
+    local multiplier="1.0"
+    case "$COUNCIL_DEPTH" in
+        quick) multiplier="0.75" ;;
+        standard) multiplier="1.0" ;;
+        deep) multiplier="1.5" ;;
+    esac
+
+    # Conservative mixed-provider default: $3/MTok input, $15/MTok output.
+    local estimate
+    estimate=$(awk \
+        -v input="$input_tokens" \
+        -v multiplier="$multiplier" \
+        -v members="$COUNCIL_RESOLVED_MEMBERS" \
+        'BEGIN {
+            output = input * multiplier
+            cost = members * (((input / 1000000.0) * 3.0) + ((output / 1000000.0) * 15.0))
+            if (cost > 0 && cost < 0.01) {
+                cost = 0.01
+            }
+            printf "%.4f", cost
+        }')
+    COUNCIL_ESTIMATED_COST="$estimate"
 }
 
 council_parse_args() {
@@ -248,6 +293,8 @@ council_write_summary_json() {
     local status="$1"
     local summary_path="${COUNCIL_RUN_DIR}/summary.json"
 
+    council_estimate_cost
+
     jq -n \
         --arg run_id "$COUNCIL_RUN_ID" \
         --arg status "$status" \
@@ -258,10 +305,12 @@ council_write_summary_json() {
         --arg members "$COUNCIL_RESOLVED_MEMBERS" \
         --arg benchmark "$COUNCIL_BENCHMARK" \
         --arg max_cost "$COUNCIL_MAX_COST" \
+        --arg estimated_cost "$COUNCIL_ESTIMATED_COST" \
         --arg providers "$COUNCIL_PROVIDERS" \
         --arg implement "$COUNCIL_IMPLEMENT" \
         --arg worktree "$COUNCIL_WORKTREE" \
         --arg fixture "$COUNCIL_FIXTURE" \
+        --arg member_override_warning "$COUNCIL_MEMBER_OVERRIDE_WARNING" \
         --arg task "$COUNCIL_TASK" \
         '{
           run_id: $run_id,
@@ -281,7 +330,7 @@ council_write_summary_json() {
           },
           budget: {
             max_cost_usd: ($max_cost | tonumber),
-            estimated_cost_usd: 0,
+            estimated_cost_usd: ($estimated_cost | tonumber),
             aborted_for_cost: false
           },
           quorum: {
@@ -290,6 +339,9 @@ council_write_summary_json() {
             met: false
           },
           providers: $providers,
+          warnings: {
+            member_override: ($member_override_warning == "true")
+          },
           council: [
             {
               seat: "chair",
@@ -299,13 +351,31 @@ council_write_summary_json() {
               provider_org: "anthropic",
               score: null,
               benchmark_signal: null
+            },
+            {
+              seat: "advisor",
+              persona: "backend-architect",
+              provider: "codex",
+              model: "gpt-5.3-codex",
+              provider_org: "openai",
+              score: null,
+              benchmark_signal: null
+            },
+            {
+              seat: "skeptic",
+              persona: "security-auditor",
+              provider: "claude",
+              model: null,
+              provider_org: "anthropic",
+              score: null,
+              benchmark_signal: null
             }
           ],
           veto: {
-            triggered: false,
-            severity: null,
-            confidence: null,
-            reason: null,
+            triggered: ($fixture == "critical-veto"),
+            severity: (if $fixture == "critical-veto" then "critical" else null end),
+            confidence: (if $fixture == "critical-veto" then 1.0 else null end),
+            reason: (if $fixture == "critical-veto" then "fixture: implementation plan lacks tests for a high-risk change" else null end),
             overridden: false
           },
           artifacts: {
