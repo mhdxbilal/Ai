@@ -1,5 +1,14 @@
 # Changelog
 
+## [9.39.1] - 2026-05-22
+
+Patch release covering two synthesis/dispatch timeout bugs caught during daily triage.
+
+### Fixed
+
+- Replace hardcoded `180s` synthesis timeouts with `${TIMEOUT:-300}` across all `run_agent_sync` synthesis call sites in `heuristics.sh`, `research.sh`, `sentinel.sh`, `review.sh`, `factory.sh`, and `factory-spec.sh`. The `--timeout N` CLI flag now correctly controls synthesis stages as documented; default raised from 180s to 300s (#408, #409).
+- Honor `OCTOPUS_AGENT_TIMEOUT` unconditionally; treat oversize agent rejections as skip, not failure, to avoid aborting the whole workflow (#410, #411).
+
 ## [9.39.0] - 2026-05-21
 
 ### Added

@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "nyldn plugins for Claude Code workflows.",
-    "version": "9.39.0"
+    "version": "9.39.1"
   },
   "plugins": [
     {
@@ -15,8 +15,8 @@
         "source": "url",
         "url": "https://github.com/nyldn/claude-octopus.git"
       },
-      "description": "v9.39.0 - Multi-LLM orchestration for Claude Code with session provider controls, Codex marketplace icon, and OpenCode catalog maintenance. 32 personas, 48 commands, 52 skills. Run /octo:setup.",
-      "version": "9.39.0",
+      "description": "v9.39.1 - Multi-LLM orchestration for Claude Code. Fixes synthesis stage timeouts (--timeout now honored) and agent dispatch oversize handling. 32 personas, 48 commands, 52 skills. Run /octo:setup.",
+      "version": "9.39.1",
       "author": {
         "name": "nyldn",
         "url": "https://github.com/nyldn"
