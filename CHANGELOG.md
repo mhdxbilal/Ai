@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [9.40.1] - 2026-05-23
+
+### Fixed
+
+- Fix `/octo:doctor` skill existence checks for directory-based skills so v9.39+ installs no longer report false missing-skill failures (#414, #415).
+
 ## [9.40.0] - 2026-05-22
 
 ### Added
