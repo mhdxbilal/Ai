@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -eo pipefail
 # Persistent user config for Claude Octopus.
 # Stores setup choices to ~/.claude-octopus/user-config.json.
 #
