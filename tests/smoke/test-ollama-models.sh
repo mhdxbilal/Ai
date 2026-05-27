@@ -10,15 +10,14 @@ source "$SCRIPT_DIR/../helpers/test-framework.sh"
 
 test_suite "check-ollama-models.sh"
 
-# Disable errexit for tests — we capture exit codes explicitly and expect non-zero.
-set +e
+set -e
 
 CHECK_SCRIPT="$PROJECT_ROOT/scripts/helpers/check-ollama-models.sh"
 PROVIDER_VERSIONS="$PROJECT_ROOT/scripts/lib/provider-versions.sh"
 
-# Fixture directory
-FIXTURE_DIR=$(mktemp -d 2>/dev/null) || FIXTURE_DIR="/tmp/octo-ollama-tests-$$"
-mkdir -p "$FIXTURE_DIR"
+TEST_TMP_DIR="/tmp/octopus-tests-$$"
+mkdir -p "$TEST_TMP_DIR"
+trap 'rm -rf "$TEST_TMP_DIR" 2>/dev/null' EXIT INT TERM
 
 # Build a fixture with 1 fresh model, 1 stale model
 build_mixed_fixture() {
@@ -81,7 +80,7 @@ test_syntax_clean() {
 
 test_mixed_human_output() {
     test_case "Mixed fixture: human output lists both models"
-    local fixture="$FIXTURE_DIR/mixed.json"
+    local fixture="$TEST_TMP_DIR/mixed.json"
     build_mixed_fixture "$fixture"
     local out
     out=$(OCTO_OLLAMA_API_URL="file://$fixture" bash "$CHECK_SCRIPT" 2>&1 || true)
@@ -94,7 +93,7 @@ test_mixed_human_output() {
 
 test_mixed_count_stale_returns_one() {
     test_case "Mixed fixture: --count-stale returns 1"
-    local fixture="$FIXTURE_DIR/mixed.json"
+    local fixture="$TEST_TMP_DIR/mixed.json"
     build_mixed_fixture "$fixture"
     local count
     count=$(OCTO_OLLAMA_API_URL="file://$fixture" bash "$CHECK_SCRIPT" --count-stale 2>/dev/null)
@@ -103,16 +102,18 @@ test_mixed_count_stale_returns_one() {
 
 test_mixed_exit_code_is_one() {
     test_case "Mixed fixture: --exit-code returns 1"
-    local fixture="$FIXTURE_DIR/mixed.json"
+    local fixture="$TEST_TMP_DIR/mixed.json"
     build_mixed_fixture "$fixture"
+    set +e
     OCTO_OLLAMA_API_URL="file://$fixture" bash "$CHECK_SCRIPT" --exit-code 2>/dev/null
     local rc=$?
+    set -e
     [[ "$rc" -eq 1 ]] && test_pass || test_fail "Expected exit 1, got $rc"
 }
 
 test_mixed_json_valid() {
     test_case "Mixed fixture: --json produces valid JSON"
-    local fixture="$FIXTURE_DIR/mixed.json"
+    local fixture="$TEST_TMP_DIR/mixed.json"
     build_mixed_fixture "$fixture"
     local out
     out=$(OCTO_OLLAMA_API_URL="file://$fixture" bash "$CHECK_SCRIPT" --json 2>/dev/null)
@@ -125,7 +126,7 @@ test_mixed_json_valid() {
 
 test_mixed_json_has_stale_field() {
     test_case "Mixed fixture: --json includes stale=1"
-    local fixture="$FIXTURE_DIR/mixed.json"
+    local fixture="$TEST_TMP_DIR/mixed.json"
     build_mixed_fixture "$fixture"
     local stale_val
     stale_val=$(OCTO_OLLAMA_API_URL="file://$fixture" bash "$CHECK_SCRIPT" --json 2>/dev/null \
@@ -137,7 +138,7 @@ test_mixed_json_has_stale_field() {
 
 test_all_fresh_count_zero() {
     test_case "All-fresh fixture: --count-stale returns 0"
-    local fixture="$FIXTURE_DIR/all-fresh.json"
+    local fixture="$TEST_TMP_DIR/all-fresh.json"
     build_all_fresh_fixture "$fixture"
     local count
     count=$(OCTO_OLLAMA_API_URL="file://$fixture" bash "$CHECK_SCRIPT" --count-stale 2>/dev/null)
@@ -146,7 +147,7 @@ test_all_fresh_count_zero() {
 
 test_all_fresh_exit_zero() {
     test_case "All-fresh fixture: --exit-code returns 0"
-    local fixture="$FIXTURE_DIR/all-fresh.json"
+    local fixture="$TEST_TMP_DIR/all-fresh.json"
     build_all_fresh_fixture "$fixture"
     OCTO_OLLAMA_API_URL="file://$fixture" bash "$CHECK_SCRIPT" --exit-code 2>/dev/null
     local rc=$?
@@ -157,7 +158,7 @@ test_all_fresh_exit_zero() {
 
 test_empty_fixture_count_zero() {
     test_case "Empty models array: --count-stale returns 0"
-    local fixture="$FIXTURE_DIR/empty.json"
+    local fixture="$TEST_TMP_DIR/empty.json"
     build_empty_fixture "$fixture"
     local count
     count=$(OCTO_OLLAMA_API_URL="file://$fixture" bash "$CHECK_SCRIPT" --count-stale 2>/dev/null)
@@ -219,8 +220,5 @@ test_unreachable_count_stale_zero
 test_age_ok_unknown_date_passes
 test_age_ok_garbage_date_passes
 test_age_ok_fresh_passes
-
-# Cleanup
-rm -rf "$FIXTURE_DIR" 2>/dev/null
 
 test_summary

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 # Check installed Ollama models for staleness against OCTO_OLLAMA_STALE_DAYS.
 # Sources scripts/lib/provider-versions.sh for the comparator.
 #
@@ -58,6 +59,7 @@ PYEOF
 }
 
 declare -a MODEL_LINES
+declare -a MODEL_NAMES
 declare -a MODEL_STATUSES
 STALE_COUNT=0
 TOTAL_COUNT=0
@@ -70,14 +72,15 @@ if [[ -n "$TAGS_JSON" ]]; then
     # Strip CR (Python on Windows emits CRLF in text-mode stdout).
     modified_at="${modified_at%$'\r'}"
     name="${name%$'\r'}"
-    ((TOTAL_COUNT++))
+    ((TOTAL_COUNT++)) || true
+    MODEL_NAMES+=("$name")
     if octo_ollama_model_age_ok "$modified_at"; then
       MODEL_LINES+=("  ✅ ${name}")
       MODEL_STATUSES+=("fresh")
     else
       MODEL_LINES+=("  ⚠️  ${name} (stale, modified ${modified_at})")
       MODEL_STATUSES+=("stale")
-      ((STALE_COUNT++))
+      ((STALE_COUNT++)) || true
     fi
   done < <(_octo_parse_models "$TAGS_JSON")
 fi
@@ -96,24 +99,41 @@ fi
 
 # --json output
 print_json_models() {
-  local count="${#MODEL_LINES[@]}"
-  echo "{"
-  echo "  \"total\": ${TOTAL_COUNT},"
-  echo "  \"stale\": ${STALE_COUNT},"
-  echo "  \"threshold_days\": ${OCTO_OLLAMA_STALE_DAYS},"
-  echo "  \"results\": ["
-  for i in "${!MODEL_LINES[@]}"; do
-    local comma="," label status
-    [[ $((i + 1)) -eq ${count} ]] && comma=""
-    label=$(echo "${MODEL_LINES[$i]}" | sed "s/^[[:space:]]*[✅⚠️ ]*//" | xargs)
-    status="${MODEL_STATUSES[$i]}"
-    echo "    {\"name\": \"${label}\", \"status\": \"${status}\"}${comma}"
-  done
-  echo "  ]"
-  echo "}"
+  python3 - "$TOTAL_COUNT" "$STALE_COUNT" "${OCTO_OLLAMA_STALE_DAYS}" <<'PYEOF'
+import json
+import os
+import sys
+
+total = int(sys.argv[1])
+stale = int(sys.argv[2])
+threshold_days = int(sys.argv[3])
+names = os.environ.get("OCTO_MODEL_NAMES", "").split("\n")
+statuses = os.environ.get("OCTO_MODEL_STATUSES", "").split("\n")
+if names == [""]:
+    names = []
+if statuses == [""]:
+    statuses = []
+while names and names[-1] == "":
+    names.pop()
+while statuses and statuses[-1] == "":
+    statuses.pop()
+results = [
+    {"name": name, "status": status}
+    for name, status in zip(names, statuses)
+]
+print(json.dumps({
+    "total": total,
+    "stale": stale,
+    "threshold_days": threshold_days,
+    "results": results,
+}, indent=2))
+PYEOF
 }
 
 if [[ "${1:-}" == "--json" ]]; then
+  OCTO_MODEL_NAMES="$(printf '%s\n' "${MODEL_NAMES[@]}")"
+  OCTO_MODEL_STATUSES="$(printf '%s\n' "${MODEL_STATUSES[@]}")"
+  export OCTO_MODEL_NAMES OCTO_MODEL_STATUSES
   print_json_models
   exit 0
 fi

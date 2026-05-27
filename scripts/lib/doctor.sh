@@ -2,6 +2,7 @@
 # Claude Octopus — Environment Doctor Diagnostics
 # Extracted from orchestrate.sh
 # Source-safe: no main execution block.
+set -eo pipefail
 
 if ! declare -f _is_cursor_agent_binary >/dev/null 2>&1; then
     _doctor_lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -77,14 +78,28 @@ cmd_update_clis() {
 }
 
 doctor_check_providers() {
-    # Load version floor constants and octo_version_ok() comparator.
-    # If sourcing fails, define a fail-open stub so version-floor checks degrade to no-op
-    # rather than blowing up with "octo_version_ok: command not found".
-    local _octo_root="${OCTO_ROOT:-$(git -C "$(pwd)" rev-parse --show-toplevel 2>/dev/null)}"
-    source "${_octo_root}/scripts/lib/provider-versions.sh" 2>/dev/null || true
+    local _doctor_lib_dir
+    _doctor_lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    local _octo_root="${OCTO_ROOT:-}"
+    if [[ -z "$_octo_root" ]]; then
+        _octo_root="$(git -C "$(pwd)" rev-parse --show-toplevel 2>/dev/null || true)"
+    fi
+    if [[ -z "$_octo_root" || ! -r "$_octo_root/scripts/lib/provider-versions.sh" ]]; then
+        _octo_root="$(cd "${_doctor_lib_dir}/../.." && pwd)"
+    fi
+
+    if [[ -r "$_octo_root/scripts/lib/provider-versions.sh" ]]; then
+        source "${_octo_root}/scripts/lib/provider-versions.sh"
+    fi
     if ! type -t octo_version_ok >/dev/null 2>&1; then
         # shellcheck disable=SC2317  # fallback stub
         octo_version_ok() { return 0; }
+    fi
+    local _timeout_cmd=""
+    if command -v gtimeout &>/dev/null; then
+        _timeout_cmd="gtimeout"
+    elif command -v timeout &>/dev/null; then
+        _timeout_cmd="timeout"
     fi
     # Claude Code version + compatibility
     local cc_ver="${CLAUDE_CODE_VERSION:-}"
@@ -147,11 +162,12 @@ doctor_check_providers() {
         ollama_health=$(curl -sf http://localhost:11434/api/tags 2>/dev/null) || true
         if [[ -n "$ollama_health" ]]; then
             local model_count stale_count
-            model_count=$(printf '%s' "$ollama_health" | grep -c '"name"' 2>/dev/null || echo "0")
+            model_count=$(printf '%s' "$ollama_health" | grep -c '"name"' 2>/dev/null || true)
+            [[ "$model_count" =~ ^[0-9]+$ ]] || model_count=0
             # Check model staleness via check-ollama-models.sh (Pre-mortem F2: sanitize to integer)
             stale_count=0
             local _check="${_octo_root}/scripts/helpers/check-ollama-models.sh"
-            if [[ -x "$_check" ]]; then
+            if [[ -r "$_check" ]]; then
                 stale_count=$(bash "$_check" --count-stale 2>/dev/null)
                 stale_count=$(printf '%s' "$stale_count" | grep -oE '^[0-9]+$' || echo "0")
                 stale_count="${stale_count:-0}"
@@ -188,7 +204,11 @@ doctor_check_providers() {
             copilot_auth="gh-cli"
         fi
         local gh_ver
-        gh_ver=$(timeout 3 gh --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "unknown")
+        if [[ -n "$_timeout_cmd" ]]; then
+            gh_ver=$("$_timeout_cmd" 3 gh --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "unknown")
+        else
+            gh_ver=$(gh --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "unknown")
+        fi
         if ! octo_version_ok "${gh_ver}" "${OCTO_GH_MIN_VERSION:-2.0.0}"; then
             doctor_add "copilot-cli" "providers" "warn" \
                "gh CLI v${gh_ver} (outdated, min: v${OCTO_GH_MIN_VERSION:-2.0.0})" \
@@ -216,7 +236,11 @@ doctor_check_providers() {
             qwen_auth="env:QWEN_API_KEY"
         fi
         local qwen_ver
-        qwen_ver=$(timeout 3 qwen --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "unknown")
+        if [[ -n "$_timeout_cmd" ]]; then
+            qwen_ver=$("$_timeout_cmd" 3 qwen --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "unknown")
+        else
+            qwen_ver=$(qwen --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "unknown")
+        fi
         if ! octo_version_ok "${qwen_ver}" "${OCTO_QWEN_MIN_VERSION:-9.10.0}"; then
             doctor_add "qwen-cli" "providers" "warn" \
                "Qwen CLI v${qwen_ver} (outdated, min: v${OCTO_QWEN_MIN_VERSION:-9.10.0})" \
@@ -278,16 +302,19 @@ doctor_check_providers() {
     # OpenCode CLI (optional — multi-provider router, v9.11.0)
     if command -v opencode &>/dev/null; then
         local opencode_ver
-        opencode_ver=$(timeout 3 opencode --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "unknown")
+        if [[ -n "$_timeout_cmd" ]]; then
+            opencode_ver=$("$_timeout_cmd" 3 opencode --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "unknown")
+        else
+            opencode_ver=$(opencode --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "unknown")
+        fi
         if ! octo_version_ok "${opencode_ver}" "${OCTO_OPENCODE_MIN_VERSION:-0.1.0}"; then
             doctor_add "opencode-version" "providers" "warn" "OpenCode v${opencode_ver} (below floor v${OCTO_OPENCODE_MIN_VERSION:-0.1.0})" "$(command -v opencode) — npm install -g opencode-ai"
         fi
         local opencode_auth="none"
-        # Portable timeout: prefer gtimeout (macOS via coreutils), fallback to timeout
-        local _timeout_cmd="timeout"
-        command -v gtimeout &>/dev/null && _timeout_cmd="gtimeout"
         if [[ -f "${HOME}/.local/share/opencode/auth.json" ]]; then
-            if "$_timeout_cmd" 3 opencode auth list &>/dev/null; then
+            if [[ -n "$_timeout_cmd" ]] && "$_timeout_cmd" 3 opencode auth list &>/dev/null; then
+                opencode_auth="multi"
+            elif [[ -z "$_timeout_cmd" ]] && opencode auth list &>/dev/null; then
                 opencode_auth="multi"
             else
                 opencode_auth="expired"
