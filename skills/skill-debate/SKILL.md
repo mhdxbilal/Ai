@@ -52,6 +52,7 @@ YOUR PROMPT HERE"
 ```bash
 printf '%s' "YOUR PROMPT HERE" | gemini -m "${OCTOPUS_GEMINI_MODEL:-gemini-2.5-flash}" -p "" -o text --approval-mode yolo
 ```
+
 - MUST use `-p ""` to trigger headless mode
 - MUST pipe prompt via stdin (avoids OS arg length limits)
 - MUST use `-m` to specify the model — omitting it falls back to the Gemini CLI's own default (`gemini-2.5-pro`) instead of the plugin-configured model
