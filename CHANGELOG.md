@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [9.41.1] - 2026-05-27
+
+### Added
+
+- Add provider preflight and install helpers for faster first-run setup (#419).
+- Add provider CLI version floor checks in preflight and doctor surfaces (#420).
+- Add Ollama model staleness checks with JSON and smoke-test coverage (#420).
+
+### Fixed
+
+- Force Gemini debate calls to use the configured model instead of the Gemini CLI default (#422).
+- Harden preflight and doctor shell helpers for macOS-compatible timeout handling and safer JSON output (#419, #420).
+
 ## [9.41.0] - 2026-05-24
 
 ### Added

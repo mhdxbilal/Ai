@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Tests that interactive commands (setup, model-config, doctor) have the required
+# Tests that interactive commands (setup, model-config) have the required
 # "never dismiss" patterns that prevent the agent from silently skipping them.
 #
 # Bug context: A user reported that invoking /octo:setup as a returning user
@@ -11,7 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 source "$SCRIPT_DIR/../helpers/test-framework.sh"
-test_suite "that interactive commands (setup, model-config, doctor) have the required"
+test_suite "that interactive commands (setup, model-config) have the required"
 
 
 pass() { test_case "$1"; test_pass; }
@@ -22,7 +22,7 @@ fail() { test_case "$1"; test_fail "${2:-$1}"; }
 
 # CC-facing files (.claude/commands/) are what the agent actually reads.
 # These are the authoritative versions that must have interactive UX.
-INTERACTIVE_CC_COMMANDS="setup model-config doctor"
+INTERACTIVE_CC_COMMANDS="setup model-config"
 
 echo "=== Interactive Command Requirements ==="
 
@@ -48,8 +48,6 @@ echo "=== Never-Dismiss Guardrails ==="
 
 GUARDRAIL_PATTERNS="MUST always run|Never silently dismiss|CRITICAL.*always.*flow|ALWAYS show"
 
-# Only check setup and model-config — doctor is a diagnostic tool that
-# shows results and offers fixes, its interactive UX is different
 GUARDRAIL_COMMANDS="setup model-config"
 
 for cmd in $GUARDRAIL_COMMANDS; do
@@ -125,4 +123,24 @@ for f in "$PROJECT_ROOT/.claude/commands/model-config.md"; do
         fi
     fi
 done
+
+# ── Octopus must not ship /doctor because Claude reserves native /doctor ──────
+
+echo ""
+echo "=== Native Doctor Reservation ==="
+
+doctor_path="$PROJECT_ROOT/.claude/commands/doctor.md"
+plugin_json="$PROJECT_ROOT/.claude-plugin/plugin.json"
+
+if [[ -e "$doctor_path" ]]; then
+    fail "doctor.md is not shipped as an Octopus command" "Octopus must not register a /doctor command; Claude reserves native /doctor"
+else
+    pass "doctor.md is not shipped as an Octopus command"
+fi
+
+if grep -q '"./.claude/commands/doctor.md"' "$plugin_json" 2>/dev/null; then
+    fail "doctor.md is not registered in plugin.json" "Remove doctor.md from .claude-plugin/plugin.json commands"
+else
+    pass "doctor.md is not registered in plugin.json"
+fi
 test_summary

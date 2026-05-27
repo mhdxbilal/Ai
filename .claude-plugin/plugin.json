@@ -1,7 +1,7 @@
 {
   "name": "octo",
-  "version": "9.41.0",
-  "description": "v9.41.0 \u2014 /octo:council promoted to first-class workflow: structured 3/5/7-persona deliberation across Claude, Codex, Gemini, OpenCode with goal modes, adversarial styles, benchmark-aware routing, quorum/veto gates, and gated implementation handoff. Run /octo:setup.",
+  "version": "9.41.1",
+  "description": "v9.41.1 \u2014 /octo:council promoted to first-class workflow: structured 3/5/7-persona deliberation across Claude, Codex, Gemini, OpenCode with goal modes, adversarial styles, benchmark-aware routing, quorum/veto gates, and gated implementation handoff. Run /octo:setup.",
   "author": {
     "name": "nyldn",
     "url": "https://github.com/nyldn"
@@ -86,6 +86,7 @@
     "./.claude/commands/meta-prompt.md",
     "./.claude/commands/prd-score.md",
     "./.claude/commands/setup.md",
+    "./.claude/commands/preflight.md",
     "./.claude/commands/km.md",
     "./.claude/commands/dev.md",
     "./.claude/commands/review.md",
