@@ -7,6 +7,8 @@
 ### Fixed
 
 - Add the Gemini model flag to debate skill calls so selected Gemini models are honored (#422).
+- Add Cursor Agent trust and text-output flags to smoke checks so untrusted workspaces do not report false provider failures (#426, #427).
+- Accept directory-based skill entries in doctor skill checks so valid installs do not report false missing-skill failures (#428, #429).
 
 ### Changed
 
