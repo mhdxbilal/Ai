@@ -11,7 +11,7 @@
     {
       "name": "claude-octopus",
       "source": "./",
-      "description": "v9.42.0 - Multi-AI orchestration with Double Diamond workflow. 32 personas, 48 commands, 54 skills. Run /octo:setup after install.",
+      "description": "v9.42.0 - Multi-AI orchestration with Double Diamond workflow. 32 personas, 50 commands, 54 skills. Run /octo:setup after install.",
       "version": "9.42.0",
       "author": {
         "name": "nyldn"
