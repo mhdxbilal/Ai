@@ -1421,15 +1421,22 @@ council_live_response() {
     local provider="$1"
     local persona="$2"
     local prompt="$3"
+    local dispatch_phase="${4:-}"
 
     # v9.43: Host-native path — provider IS the active host runtime (e.g. Codex CLI
     # running council from within Codex). Spawning an external subprocess of the same
     # CLI fails on all platforms and hangs or produces no output on Windows/Git Bash.
-    # Emit a structured in-context note so the response file is non-empty and quorum
-    # is met; synthesis will include this entry with appropriate framing.
+    # For advice phases: emit a structured in-context note so the response file is
+    # non-empty and quorum is met.
+    # For synthesis phases (chair-synthesis): return 1 so council_write_synthesis()
+    # falls through to its built-in fallback — a placeholder note is not shaped like
+    # a valid synthesis and would break downstream gates.
     local _provider_status
     _provider_status="$(jq -r --arg p "$provider" '.[$p] // "missing"' <<< "$COUNCIL_PROVIDER_STATUS_JSON")"
     if [[ "$_provider_status" == "host-native" ]]; then
+        if [[ "$dispatch_phase" == "chair-synthesis" ]]; then
+            return 1
+        fi
         cat <<EOF
 ## ${persona} (${provider} — host agent)
 
@@ -1513,7 +1520,7 @@ council_dispatch_member() {
         return 0
     fi
 
-    council_live_response "$provider" "$persona" "$prompt"
+    council_live_response "$provider" "$persona" "$prompt" "$phase"
 }
 
 council_write_config_json() {

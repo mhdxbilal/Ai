@@ -1184,7 +1184,7 @@ test_council_live_response_host_native_skips_subprocess() {
 
     COUNCIL_PROVIDER_STATUS_JSON='{"codex":"host-native"}'
     local out
-    out="$(council_live_response "codex" "code-reviewer" "dummy prompt")"
+    out="$(council_live_response "codex" "code-reviewer" "dummy prompt" "independent-advice")"
     local rc=$?
 
     if [[ $rc -eq 0 && "$out" == *"host agent"* ]]; then
@@ -1195,6 +1195,23 @@ test_council_live_response_host_native_skips_subprocess() {
     fi
 }
 
+test_council_live_response_host_native_fails_for_synthesis() {
+    test_case "council_live_response returns 1 for host-native chair-synthesis (issue #444 follow-up)"
+    load_council_lib || return 1
+
+    COUNCIL_PROVIDER_STATUS_JSON='{"codex":"host-native"}'
+    council_live_response "codex" "strategy-analyst" "dummy prompt" "chair-synthesis"
+    local rc=$?
+
+    if [[ $rc -ne 0 ]]; then
+        test_pass
+    else
+        test_fail "expected rc!=0 for host-native chair-synthesis, got rc=0"
+        return 1
+    fi
+}
+
 test_council_host_native_detection
 test_council_live_response_host_native_skips_subprocess
+test_council_live_response_host_native_fails_for_synthesis
 test_summary
