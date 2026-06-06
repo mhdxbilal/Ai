@@ -43,8 +43,8 @@ if [[ ! -t 0 ]]; then
     cat > "$prompt_file"
 fi
 
-# Pattern must mirror lib/smoke.sh::_classify_smoke_error or fallback drifts.
-# Quota-exhaustion errors are model-specific terminal failures; include them so
+# NOTE: This intentionally diverges from lib/smoke.sh::_classify_smoke_error:
+# quota-exhaustion errors are treated here as model-terminal so
 # the fallback chain is tried instead of propagating a hard non-zero exit.
 is_model_error() {
     (
@@ -96,7 +96,7 @@ for model in "${model_list[@]}"; do
     if is_model_error "$last_err" && [[ $attempt -lt $total ]]; then
         if [[ "${OCTOPUS_GEMINI_FALLBACK_QUIET:-false}" != "true" ]]; then
             next="${model_list[$attempt]}"
-            printf 'gemini-exec: %s returned model-not-found; falling back to %s\n' \
+            printf 'gemini-exec: %s returned terminal model error; falling back to %s\n' \
                 "$model" "$next" >&2
         fi
         continue
