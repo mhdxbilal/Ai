@@ -44,10 +44,12 @@ if [[ ! -t 0 ]]; then
 fi
 
 # Pattern must mirror lib/smoke.sh::_classify_smoke_error or fallback drifts.
+# Quota-exhaustion errors are model-specific terminal failures; include them so
+# the fallback chain is tried instead of propagating a hard non-zero exit.
 is_model_error() {
     (
         shopt -s nocasematch
-        local _re='model.*not (found|available|exist)|does not exist|unknown model|invalid model|no such model|ModelNotFoundError|404'
+        local _re='model.*not (found|available|exist)|does not exist|unknown model|invalid model|no such model|ModelNotFoundError|404|TerminalQuotaError|exhausted your (daily quota|capacity)|quota.*exceeded'
         [[ "$1" =~ $_re ]]
     )
 }
