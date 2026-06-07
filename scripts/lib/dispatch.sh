@@ -36,6 +36,16 @@ get_agent_command() {
     esac
 
     local sandbox_flag="--sandbox ${codex_sandbox}"
+    local codex_bin="${OCTOPUS_CODEX_BIN:-codex}"
+
+    # Allow advanced users to point Octopus at a codex-compatible wrapper
+    # without replacing codex on PATH. Keep this restricted because the value
+    # is interpolated into the shell command string returned below.
+    if [[ ! "$codex_bin" =~ ^[A-Za-z0-9_./-]+$ ]]; then
+        log "ERROR" "Invalid OCTOPUS_CODEX_BIN value: '${codex_bin}'. Allowed characters: A-Z a-z 0-9 _ . / -"
+        log "ERROR" "Falling back to codex for safety."
+        codex_bin="codex"
+    fi
 
     # Spawned `claude --print` subprocesses have no interactive approver, so any
     # tool that would prompt is silently denied ("Read is blocked in the current
@@ -52,19 +62,19 @@ get_agent_command() {
     case "$agent_type" in
         codex|codex-standard|codex-max|codex-mini|codex-general)
             model=$(get_agent_model "$agent_type" "$phase" "$role")
-            echo "codex exec --skip-git-repo-check --model ${model} ${sandbox_flag} -"
+            echo "${codex_bin} exec --skip-git-repo-check --model ${model} ${sandbox_flag} -"
             ;;
         codex-spark)  # v8.9.0: Ultra-fast Spark model (1000+ tok/s)
             model=$(get_agent_model "$agent_type" "$phase" "$role")
-            echo "codex exec --skip-git-repo-check --model ${model} ${sandbox_flag} -"
+            echo "${codex_bin} exec --skip-git-repo-check --model ${model} ${sandbox_flag} -"
             ;;
         codex-reasoning)  # v8.9.0: Reasoning models (o3, o3)
             model=$(get_agent_model "$agent_type" "$phase" "$role")
-            echo "codex exec --skip-git-repo-check --model ${model} ${sandbox_flag} -"
+            echo "${codex_bin} exec --skip-git-repo-check --model ${model} ${sandbox_flag} -"
             ;;
         codex-large-context)  # v8.9.0: 1M context models (gpt-4.1)
             model=$(get_agent_model "$agent_type" "$phase" "$role")
-            echo "codex exec --skip-git-repo-check --model ${model} ${sandbox_flag} -"
+            echo "${codex_bin} exec --skip-git-repo-check --model ${model} ${sandbox_flag} -"
             ;;
         gemini|gemini-fast|gemini-image)
             model=$(get_agent_model "$agent_type" "$phase" "$role")
