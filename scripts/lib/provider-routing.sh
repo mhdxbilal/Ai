@@ -71,10 +71,25 @@ build_provider_env() {
             ;;
         agy*|antigravity)
             # Antigravity CLI relies on its inherited desktop/session environment
-            # for prompt-mode behavior and auth context. A stripped env -i shell can
-            # cause it to ignore stdin and act on the workspace instead. This also
-            # preserves TRACEPARENT/TRACESTATE from the parent environment.
-            PROVIDER_ENV_ARRAY=()
+            # for prompt-mode behavior and auth context. Users can opt into a
+            # minimal environment when their local agy auth supports it.
+            if [[ "${OCTOPUS_AGY_ISOLATED:-false}" == "true" ]]; then
+                PROVIDER_ENV_ARRAY=(env -i "PATH=$PATH" "HOME=$HOME" "TERM=${TERM:-dumb}" "TMPDIR=${TMPDIR:-/tmp}")
+                if [[ -n "${AGY_AUTH_TOKEN:-}" ]]; then
+                    PROVIDER_ENV_ARRAY+=("AGY_AUTH_TOKEN=${AGY_AUTH_TOKEN}")
+                fi
+                if [[ -n "${AGY_CONFIG:-}" ]]; then
+                    PROVIDER_ENV_ARRAY+=("AGY_CONFIG=${AGY_CONFIG}")
+                fi
+                if [[ ${#_trace_env[@]} -gt 0 ]]; then
+                    PROVIDER_ENV_ARRAY+=("${_trace_env[@]}")
+                fi
+            else
+                if [[ "${OCTOPUS_SECURITY_V870:-true}" == "true" ]] && declare -f log_warn >/dev/null 2>&1; then
+                    log_warn "Antigravity CLI inherits the parent shell environment; set OCTOPUS_AGY_ISOLATED=true to use a minimal env."
+                fi
+                PROVIDER_ENV_ARRAY=()
+            fi
             ;;
         perplexity*)
             # perplexity_execute is a shell function — env -i cannot exec it (#300)

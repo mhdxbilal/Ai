@@ -262,7 +262,7 @@ The output is one line per agent: `agent_type|label|perspective_prompt`
 
 **Launch each perspective as a background Agent subagent.** Each agent calls `orchestrate.sh probe-single` which handles persona application, credential isolation, and result file writing.
 
-**CRITICAL: You MUST use the Agent tool with `run_in_background: true` for each perspective.** Launch external CLI agents first (higher latency — gemini, codex, copilot, qwen, opencode), then Claude Sonnet agents, then API-only agents (perplexity).
+**CRITICAL: You MUST use the Agent tool with `run_in_background: true` for each perspective.** Launch providers strictly in the runtime FLEET_OUTPUT sequence.
 
 For each perspective in the fleet, launch:
 

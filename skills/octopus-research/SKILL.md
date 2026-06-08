@@ -79,9 +79,10 @@ AskUserQuestion({
 **Check provider availability:**
 
 ```bash
-command -v codex &> /dev/null && codex_status="Available ✓" || codex_status="Not installed ✗"
-command -v gemini &> /dev/null && gemini_status="Available ✓" || gemini_status="Not installed ✗"
-command -v agy &> /dev/null && agy_status="Available ✓" || agy_status="Not installed ✗"
+provider_status="$(bash "${HOME}/.claude-octopus/plugin/scripts/helpers/check-providers.sh")"
+[[ $'\n'"$provider_status"$'\n' == *$'\ncodex:available\n'* ]] && codex_status="Available ✓" || codex_status="Not installed ✗"
+[[ $'\n'"$provider_status"$'\n' == *$'\ngemini:available\n'* ]] && gemini_status="Available ✓" || gemini_status="Not installed ✗"
+[[ $'\n'"$provider_status"$'\n' == *$'\nagy:available\n'* ]] && agy_status="Available ✓" || agy_status="Not installed ✗"
 ```
 
 **Display this banner BEFORE orchestrate.sh execution:**

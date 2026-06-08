@@ -62,6 +62,8 @@ Standard thought partner session using four breakthrough techniques:
 **MANDATORY: First, use the Bash tool to check provider availability:**
 
 ```bash
+set -euo pipefail
+
 echo "PROVIDER_CHECK_START"
 printf "codex:%s\n" "$(command -v codex >/dev/null 2>&1 && echo available || echo missing)"
 printf "gemini:%s\n" "$(command -v gemini >/dev/null 2>&1 && echo available || echo missing)"

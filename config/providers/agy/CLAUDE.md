@@ -30,14 +30,31 @@ When `OCTOPUS_AGY_MODEL` is non-empty and not `default`, Octopus adds:
 --model "$OCTOPUS_AGY_MODEL"
 ```
 
+## Security Note
+
+By default, Antigravity (`agy`) inherits the parent shell environment instead of
+running under the stripped `env -i` environment used by some other providers.
+That means `agy` can see all exported environment variables in the shell that
+starts Octopus.
+
+Avoid exporting secrets that are not needed by local CLI tools before running
+`agy` workflows. If you are unsure what is currently exported, check with a
+command such as:
+
+```bash
+env | grep -Ei 'secret|token|key'
+```
+
+For stricter isolation, run Octopus with `OCTOPUS_AGY_ISOLATED=true`. In that
+mode, Octopus starts `agy` with a minimal environment (`HOME`, `PATH`, `TERM`,
+`TMPDIR`, trace headers, and optional `AGY_AUTH_TOKEN`/`AGY_CONFIG` values).
+Keep `OCTOPUS_AGY_PRINT_TIMEOUT` set high enough for isolated print-mode runs if
+your selected model needs more time.
+
 ## Notes
 
 - `agy` is not treated as a Gemini CLI wrapper.
 - Gemini-specific flags such as `-o text`, `--approval-mode yolo`, and the
   Gemini fallback helper are not used for Antigravity.
-- Antigravity currently inherits the parent shell environment instead of the
-  stripped `env -i` provider environment because current `agy` releases rely on
-  desktop/session context for auth and prompt-mode behavior. Avoid exporting
-  secrets that are not needed by local CLI tools before running `agy` workflows.
 - `agy --print-timeout` is the primary timeout for Antigravity print mode.
 - This provider was added in response to #423.

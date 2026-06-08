@@ -80,16 +80,19 @@ test_agy_provider_detection() {
 }
 
 test_agy_inherits_environment() {
-    test_case "provider routing does not strip agy environment"
+    test_case "provider routing inherits agy environment by default with isolated opt-in"
 
     local agy_block
     agy_block="$(sed -n '/agy\*|antigravity)/,/;;/p' "$PROJECT_ROOT/scripts/lib/provider-routing.sh")"
 
-    if [[ "$agy_block" == *"PROVIDER_ENV_ARRAY=()"* ]] && \
-       [[ "$agy_block" != *"PROVIDER_ENV_ARRAY=(env -i"* ]]; then
+    if [[ "$agy_block" == *"OCTOPUS_AGY_ISOLATED"* ]] && \
+       [[ "$agy_block" == *"PROVIDER_ENV_ARRAY=()"* ]] && \
+       [[ "$agy_block" == *"PROVIDER_ENV_ARRAY=(env -i"* ]] && \
+       [[ "$agy_block" == *"AGY_AUTH_TOKEN"* ]] && \
+       [[ "$agy_block" == *"AGY_CONFIG"* ]]; then
         test_pass
     else
-        test_fail "agy should inherit the caller environment"
+        test_fail "agy should inherit by default and support OCTOPUS_AGY_ISOLATED=true"
     fi
 }
 

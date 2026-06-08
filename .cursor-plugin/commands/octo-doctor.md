@@ -16,6 +16,8 @@ Use this resolver before running any Octopus script. It avoids relying on the
 Bash installs. Run this as a single Bash call.
 
 ```bash
+set -euo pipefail
+
 OCTO_PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-}"
 if [[ -z "$OCTO_PLUGIN_ROOT" || ! -x "$OCTO_PLUGIN_ROOT/scripts/orchestrate.sh" ]]; then
   OCTO_PLUGIN_ROOT="${HOME}/.claude-octopus/plugin"

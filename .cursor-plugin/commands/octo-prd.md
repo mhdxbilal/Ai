@@ -48,6 +48,8 @@ To make this PRD highly targeted, please answer briefly:
 **Check provider availability first:**
 
 ```bash
+set -euo pipefail
+
 # Check if multi-provider research is available
 CODEX_AVAILABLE="false"
 if command -v codex >/dev/null 2>&1; then

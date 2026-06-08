@@ -110,6 +110,8 @@ Plan locally first, then run the approved `/octo:embrace` prompt in the hosted o
 **MANDATORY: Run this bash command BEFORE the banner.**
 
 ```bash
+set -euo pipefail
+
 echo "PROVIDER_CHECK_START"
 printf "codex:%s\n" "$(command -v codex >/dev/null 2>&1 && echo available || echo missing)"
 printf "gemini:%s\n" "$(command -v gemini >/dev/null 2>&1 && echo available || echo missing)"

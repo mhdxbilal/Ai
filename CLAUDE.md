@@ -27,6 +27,10 @@ Display indicators when:
 - User triggers workflow with "octo" prefix ("octo research X", "octo build Y")
 - Executing multi-provider operations
 
+Provider emoji are required in status banners, provider rows, compact banners,
+and result attribution labels. Narrative prose may use provider names without
+emoji.
+
 ### Required Output Format
 
 **Before starting a workflow**, output this banner:

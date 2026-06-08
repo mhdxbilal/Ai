@@ -334,7 +334,7 @@ Read the synthesis file and present:
 - Quality gates results
 - Request user confirmation before implementing
 
-**After user confirms, STEP 8: Implement the solution using Write/Edit tools**
+**After user confirms, STEP 6: Implement the solution using Write/Edit tools**
 
 **Include attribution:**
 ```

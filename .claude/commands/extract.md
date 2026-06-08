@@ -1482,7 +1482,7 @@ This command leverages Claude Octopus multi-AI orchestration when available:
 - **Gemini**: Pattern recognition, alternative interpretations, UX insights
 - **Antigravity**: Additional external-model perspective when installed
 
-Consensus threshold: strict majority (>50%) of participating providers must agree for high confidence
+Consensus method: the quorum resolver selects the strongest matching proposal from up to 3 provider perspectives; no numeric approval threshold is enforced
 
 If providers are not available, the command gracefully degrades to single-provider mode.
 

@@ -21,6 +21,8 @@ Interactive setup wizard. Detects what's installed, offers to install what's mis
 Run a SINGLE comprehensive check:
 
 ```bash
+set -euo pipefail
+
 echo "=== Provider Detection ==="
 printf "codex:%s\n" "$(command -v codex >/dev/null 2>&1 && echo installed || echo missing)"
 printf "codex_auth:%s\n" "$(codex --version >/dev/null 2>&1 && echo ok || echo none)"
