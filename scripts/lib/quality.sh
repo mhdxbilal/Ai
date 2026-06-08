@@ -463,13 +463,18 @@ Be concise and specific. This is a planning exercise, not implementation."
     local design_claude_agent="${OCTOPUS_DESIGN_REVIEW_CLAUDE_AGENT:-claude-sonnet}"
     local design_synthesis_agent="${OCTOPUS_DESIGN_REVIEW_SYNTH_AGENT:-claude-opus}"
     local design_timeout="${OCTOPUS_DESIGN_REVIEW_TIMEOUT:-120}"
-    if [[ ! "$design_timeout" =~ ^[0-9]+$ ]] || [[ "$design_timeout" -le 0 ]]; then
+    local design_synth_timeout="${OCTOPUS_DESIGN_REVIEW_SYNTH_TIMEOUT:-120}"
+    if [[ ! "$design_timeout" =~ ^[0-9]+$ ]] || [[ "$design_timeout" -lt 120 ]]; then
         log WARN "Invalid OCTOPUS_DESIGN_REVIEW_TIMEOUT='${design_timeout}', defaulting to 120s"
         design_timeout=120
     fi
+    if [[ ! "$design_synth_timeout" =~ ^[0-9]+$ ]] || [[ "$design_synth_timeout" -lt 120 ]]; then
+        log WARN "Invalid OCTOPUS_DESIGN_REVIEW_SYNTH_TIMEOUT='${design_synth_timeout}', defaulting to 120s"
+        design_synth_timeout=120
+    fi
 
     log INFO "Design review: gathering provider approaches..."
-    log INFO "Design review agents: codex=${design_codex_agent}, gemini=${design_gemini_agent}, claude=${design_claude_agent}, synthesis=${design_synthesis_agent}, timeout=${design_timeout}s"
+    log INFO "Design review agents: codex=${design_codex_agent}, gemini=${design_gemini_agent}, claude=${design_claude_agent}, synthesis=${design_synthesis_agent}, timeout=${design_timeout}s, synth_timeout=${design_synth_timeout}s"
 
     codex_approach=$(run_agent_sync "$design_codex_agent" "$ceremony_prompt" "$design_timeout" "implementer" "ceremony" 2>/dev/null) || true
     gemini_approach=$(run_agent_sync "$design_gemini_agent" "$ceremony_prompt" "$design_timeout" "researcher" "ceremony" 2>/dev/null) || true
@@ -495,7 +500,7 @@ Identify:
 2. GAPS: What did everyone miss?
 3. RESOLUTION: The recommended unified approach (2-3 sentences)
 
-Be brief and actionable." "$design_timeout" "synthesizer" "ceremony" 2>/dev/null) || true
+Be brief and actionable." "$design_synth_timeout" "synthesizer" "ceremony" 2>/dev/null) || true
 
     if [[ -n "$synthesis" ]]; then
         echo -e "${GREEN}Design Review Summary:${NC}"

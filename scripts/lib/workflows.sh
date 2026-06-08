@@ -914,8 +914,8 @@ tangle_resolve_repo_context_files() {
 
     # Fallback: use grep over tracked text files for rare domain tokens.
     if [[ ${#files[@]} -lt 3 ]]; then
-        for token in runTerminalScript commands execute terminal swagger activity bounded timeout; do
-            if [[ "$lower" == *"${token,,}"* ]]; then
+        for token in runterminalscript commands execute terminal swagger activity bounded timeout; do
+            if [[ "$lower" == *"$token"* ]]; then
                 while IFS= read -r full; do
                     [[ -n "$full" ]] && files+=("$full")
                 done < <(git -C "$repo_root" grep -Il -m1 "$token" -- '*.js' '*.json' '*.md' 2>/dev/null | head -n 6)
@@ -958,7 +958,9 @@ tangle_scope_is_known_or_explicit_new_file() {
         if git -C "$repo_root" ls-files --error-unmatch "$normalized" >/dev/null 2>&1; then
             return 0
         fi
-        if git -C "$repo_root" ls-files "$normalized/" 2>/dev/null | grep -q .; then
+        local child_matches
+        child_matches=$(git -C "$repo_root" ls-files "$normalized/" 2>/dev/null || true)
+        if [[ -n "$child_matches" ]]; then
             return 0
         fi
     fi
@@ -969,8 +971,12 @@ tangle_scope_is_known_or_explicit_new_file() {
         local parent="${normalized%/*}"
         [[ "$parent" == "$normalized" ]] && return 0
         [[ -d "$repo_root/$parent" ]] && return 0
-        if git -C "$repo_root" rev-parse --show-toplevel >/dev/null 2>&1 && git -C "$repo_root" ls-files "$parent/" 2>/dev/null | grep -q .; then
-            return 0
+        if git -C "$repo_root" rev-parse --show-toplevel >/dev/null 2>&1; then
+            local parent_matches
+            parent_matches=$(git -C "$repo_root" ls-files "$parent/" 2>/dev/null || true)
+            if [[ -n "$parent_matches" ]]; then
+                return 0
+            fi
         fi
     fi
     return 1
@@ -1108,9 +1114,11 @@ tangle_develop() {
     local noglob_was_set=false
     [[ "$-" == *f* ]] && noglob_was_set=true || set -f
     for token in $prompt; do
-        if [[ "$token" == *.md ]]; then
+        if [[ "$token" == plan:* || "$token" == plan=* || "$token" == *.plan.md ]]; then
             raw_file_ref="$token"
-            file_ref="${token/#\~/$HOME}"
+            raw_file_ref="${raw_file_ref#plan:}"
+            raw_file_ref="${raw_file_ref#plan=}"
+            file_ref="${raw_file_ref/#\~/$HOME}"
             break
         fi
     done
