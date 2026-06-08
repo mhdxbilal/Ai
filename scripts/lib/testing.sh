@@ -46,13 +46,15 @@ check_explicit_file_coverage() {
 }
 
 snapshot_tangle_worktree_paths() {
-    git rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 0
+    local repo_root="${PROJECT_ROOT:-$(pwd)}"
+    [[ -d "$repo_root" ]] || repo_root="$(pwd)"
+    git -C "$repo_root" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 0
 
     {
-        git diff --name-only 2>/dev/null || true
-        git diff --cached --name-only 2>/dev/null || true
-        git ls-files --others --exclude-standard 2>/dev/null || true
-    } | sed '/^$/d' | sort -u
+        git -C "$repo_root" diff --name-only 2>/dev/null || true
+        git -C "$repo_root" diff --cached --name-only 2>/dev/null || true
+        git -C "$repo_root" ls-files --others --exclude-standard 2>/dev/null || true
+    } | sed /^$/d | sort -u
 }
 
 tangle_prompt_requires_worktree_changes() {

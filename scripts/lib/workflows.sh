@@ -1166,9 +1166,11 @@ ${plan_block}"
     log INFO "Step 1: Task decomposition..."
 
     local repo_file_map=""
-    if git -C "$PROJECT_ROOT" rev-parse --show-toplevel >/dev/null 2>&1; then
+    local repo_root="${PROJECT_ROOT:-$(pwd)}"
+    [[ -d "$repo_root" ]] || repo_root="$(pwd)"
+    if git -C "$repo_root" rev-parse --show-toplevel >/dev/null 2>&1; then
         repo_file_map="Repository files available for write scopes (from git ls-files, first 200):
-$(git -C "$PROJECT_ROOT" ls-files 2>/dev/null | sed -n 1,200p)
+$(git -C "$repo_root" ls-files 2>/dev/null | sed -n 1,200p)
 "
     fi
 
