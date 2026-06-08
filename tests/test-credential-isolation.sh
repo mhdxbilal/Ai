@@ -59,7 +59,6 @@ fi
 
 # 1.2b Codex CLI config preservation — CODEX_HOME + configured env_key
 CODEX_RUNTIME_HOME=$(mktemp -d)
-mkdir -p "$CODEX_RUNTIME_HOME"
 cat > "$CODEX_RUNTIME_HOME/config.toml" <<'EOF'
 model_provider = "router"
 model = "example/model"
