@@ -547,8 +547,9 @@ ${heuristic_ctx}"
         if [[ "$agent_type" == gemini* ]] || [[ "$agent_type" == cursor-agent* ]] || [[ "$agent_type" == copilot* ]] || [[ "$agent_type" == qwen* ]]; then
             cmd_array+=(-p "")
         fi
-        # Belt-and-suspenders: bypass Gemini's interactive trust check in headless mode (#405)
-        if [[ "$agent_type" == gemini* ]]; then
+        # Belt-and-suspenders: bypass Gemini's interactive trust check in headless mode (#405).
+        # Newer Gemini CLI versions removed --skip-trust; add it only when supported.
+        if [[ "$agent_type" == gemini* ]] && gemini --help 2>&1 | grep -q -- '--skip-trust'; then
             cmd_array+=(--skip-trust)
         fi
 
