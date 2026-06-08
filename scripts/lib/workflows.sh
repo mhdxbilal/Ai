@@ -1114,7 +1114,7 @@ tangle_develop() {
     local noglob_was_set=false
     [[ "$-" == *f* ]] && noglob_was_set=true || set -f
     for token in $prompt; do
-        if [[ "$token" == plan:* || "$token" == plan=* || "$token" == *.plan.md ]]; then
+        if [[ "$token" == plan:* || "$token" == plan=* || "$token" == *plan.md ]]; then
             raw_file_ref="$token"
             raw_file_ref="${raw_file_ref#plan:}"
             raw_file_ref="${raw_file_ref#plan=}"
