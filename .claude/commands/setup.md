@@ -25,6 +25,8 @@ echo "=== Provider Detection ==="
 printf "codex:%s\n" "$(command -v codex >/dev/null 2>&1 && echo installed || echo missing)"
 printf "codex_auth:%s\n" "$(codex --version >/dev/null 2>&1 && echo ok || echo none)"
 printf "gemini:%s\n" "$(command -v gemini >/dev/null 2>&1 && echo installed || echo missing)"
+printf "agy:%s\n" "$(command -v agy >/dev/null 2>&1 && echo installed || echo missing)"
+printf "agy_model:%s\n" "${OCTOPUS_AGY_MODEL:-Claude Sonnet 4.6 (Thinking)}"
 printf "perplexity:%s\n" "$([ -n "${PERPLEXITY_API_KEY:-}" ] && echo configured || echo missing)"
 printf "copilot:%s\n" "$(command -v copilot >/dev/null 2>&1 && echo installed || echo missing)"
 printf "qwen:%s\n" "$(command -v qwen >/dev/null 2>&1 && echo installed || echo missing)"
@@ -58,6 +60,7 @@ Show a compact table:
 Providers:
   🔴 Codex CLI:     [Installed ✓ / Missing ✗]
   🟡 Gemini CLI:    [Installed ✓ / Missing ✗]
+  🧭 Antigravity:   [Installed ✓ (model: OCTOPUS_AGY_MODEL/default) / Missing ✗]
   🟣 Perplexity:    [Configured ✓ / Not set ✗]
   🟢 Copilot CLI:   [Installed ✓ / Not installed]
   🟠 Qwen CLI:      [Installed ✓ / Not installed]
@@ -154,7 +157,7 @@ AskUserQuestion({
     multiSelect: false,
     options: [
       {label: "Use Claude alone (recommended)", description: "Start immediately — Claude is built in. No extra setup needed. Add providers anytime via this menu."},
-      {label: "Add or configure a provider", description: "Install Codex, Gemini, Perplexity, Copilot, Qwen, OpenCode, or Vibe (Mistral)"},
+      {label: "Add or configure a provider", description: "Install Codex, Gemini, Antigravity, Perplexity, Copilot, Qwen, OpenCode, or Vibe (Mistral)"},
       {label: "Configure models", description: "Set which models are used for each workflow phase → launches /octo:model-config"},
       {label: "Set up token optimization (RTK)", description: "Install RTK for 60-90% token savings on bash output"},
       {label: "Set up Graphify companion", description: "Detect or install Graphify for optional knowledge-graph context"},
@@ -181,7 +184,7 @@ Route based on selection:
 
 ## STEP 3a: Provider Install (if selected above, or if core providers are missing on first run)
 
-**If core providers are missing (Codex/Gemini):**
+**If optional external providers are missing:**
 
 ```javascript
 AskUserQuestion({
@@ -192,6 +195,7 @@ AskUserQuestion({
     options: [
       {label: "Codex CLI (Recommended)", description: "npm install -g @openai/codex — OpenAI's coding agent"},
       {label: "Gemini CLI", description: "brew install gemini-cli — Google's research agent"},
+      {label: "Antigravity CLI (agy)", description: "Install Google Antigravity CLI — adds the agy provider"},
       {label: "Skip", description: "Continue with what's already installed"}
     ]
   }]
@@ -205,6 +209,16 @@ hash -r 2>/dev/null || rehash 2>/dev/null || true
 ```
 
 This ensures the installed CLI (codex, gemini) is immediately available in the current shell without a restart.
+
+For **Antigravity CLI (agy)**, first check whether `agy install` is available:
+
+```bash
+agy install
+hash -r 2>/dev/null || rehash 2>/dev/null || true
+agy models
+```
+
+If `agy` is not available yet, direct the user to install Google Antigravity CLI, then verify with `agy --version` and `agy models`. Octopus uses `OCTOPUS_AGY_MODEL` when set; otherwise it defaults to `Claude Sonnet 4.6 (Thinking)` for reliable non-interactive output.
 
 After install, offer auth:
 
@@ -297,7 +311,7 @@ AskUserQuestion({
 })
 ```
 
-If "Yes", append `export ENABLE_PROMPT_CACHING_1H=1` to `~/.bashrc` (or `~/.zshrc` per `$SHELL`), only if not already present. Note to the user: this only affects Claude-to-Claude round-trips inside Claude Code. External CLI subshells (Codex, Gemini, Perplexity) are unaffected — their providers manage caching independently.
+If "Yes", append `export ENABLE_PROMPT_CACHING_1H=1` to `~/.bashrc` (or `~/.zshrc` per `$SHELL`), only if not already present. Note to the user: this only affects Claude-to-Claude round-trips inside Claude Code. External CLI subshells (Codex, Gemini, Antigravity, Perplexity) are unaffected — their providers manage caching independently.
 
 ## STEP 4c: Project Tier Hint
 
@@ -377,7 +391,7 @@ Show final summary:
 ```
 ✅ Setup Complete!
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Providers: X active (Codex, Gemini, ...)
+Providers: X active (Codex, Gemini, Antigravity, ...)
 RTK: [Active / Not installed]
 Mode: [Dev / Knowledge / Both]
 

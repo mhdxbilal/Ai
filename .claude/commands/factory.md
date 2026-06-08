@@ -64,6 +64,7 @@ fi
 echo "PROVIDER_CHECK_START"
 printf "codex:%s\n" "$(command -v codex >/dev/null 2>&1 && echo available || echo missing)"
 printf "gemini:%s\n" "$(command -v gemini >/dev/null 2>&1 && echo available || echo missing)"
+printf "agy:%s\n" "$(command -v agy >/dev/null 2>&1 && echo available || echo missing)"
 printf "perplexity:%s\n" "$([ -n "${PERPLEXITY_API_KEY:-}" ] && echo available || echo missing)"
 printf "opencode:%s\n" "$(command -v opencode >/dev/null 2>&1 && echo available || echo missing)"
 printf "copilot:%s\n" "$(command -v copilot >/dev/null 2>&1 && echo available || echo missing)"
@@ -82,6 +83,7 @@ Pipeline: Parse → Scenarios → Embrace → Holdout → Score → Report
 Providers:
   🔴 Codex CLI: [Available ✓ / Not installed ✗] - Scenario generation + holdout evaluation
   🟡 Gemini CLI: [Available ✓ / Not installed ✗] - Cross-provider diversity + blind review
+  🧭 Antigravity CLI: [Available ✓ / Not installed ✗] - Additional external-model challenge
   🔵 Claude: Available ✓ - Orchestration, synthesis, satisfaction scoring
 
 Spec: <spec-path>
@@ -89,7 +91,7 @@ Estimated cost: $0.50-2.00 (~20-30 agent calls)
 ```
 
 **PROHIBITED: Displaying only Claude without listing all providers.**
-If both external providers are missing, warn but proceed (Claude-only mode is supported).
+If no external providers are available, warn but proceed (Claude-only mode is supported).
 
 ### EXECUTION MECHANISM — NON-NEGOTIABLE
 

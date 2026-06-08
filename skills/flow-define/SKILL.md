@@ -1,6 +1,6 @@
 ---
 name: flow-define
-description: "Multi-AI requirements scoping using Codex and Gemini CLIs (Double Diamond Define phase)"
+description: "Multi-AI requirements scoping using available external providers (Double Diamond Define phase)"
 ---
 
 > **Host: Codex CLI** — This skill was designed for Claude Code and adapted for Codex.
@@ -63,6 +63,7 @@ If `OCTO_ALLOWED_PROVIDERS` is set, treat it as the source of truth for which pr
 Provider Availability:
 🔴 Codex CLI: ${codex_status} - Technical requirements analysis
 🟡 Gemini CLI: ${gemini_status} - Business context and constraints
+🧭 Antigravity CLI: ${agy_status} - Additional external-model challenge
 🔵 Claude: Available ✓ - Consensus building and synthesis
 
 💰 Estimated Cost: $0.01-0.05
@@ -142,8 +143,8 @@ Use AskUserQuestion tool to ask:
      description: "Focus on clean architecture, may take longer"
    - label: "Best performance"
      description: "Optimize for speed and efficiency"
-   - label: "Multi-LLM debate (Claude + Codex + Gemini)"
-     description: "Three AI models debate the best approach — uses external API credits"
+   - label: "Multi-LLM debate (Claude + available providers)"
+     description: "Multiple AI models debate the best approach — may use external provider credits or subscriptions"
 
 3. **Scope Boundaries**
    Question: "What's explicitly OUT of scope for this phase?"
@@ -160,7 +161,7 @@ Use AskUserQuestion tool to ask:
    multiSelect: true
 ```
 
-**If user selected "Multi-LLM debate (Claude + Codex + Gemini)" for approach:**
+**If user selected "Multi-LLM debate (Claude + available providers)" for approach:**
 Before proceeding with orchestrate.sh, run a Multi-LLM debate to determine the technical approach:
 ```
 /octo:debate --rounds 2 --debate-style collaborative "What is the best technical approach for [feature]? Consider: speed to market, maintainability, performance, and the existing codebase patterns."
@@ -208,7 +209,7 @@ ${HOME}/.claude-octopus/plugin/scripts/orchestrate.sh define "<user's clarificat
 ```
 
 **CRITICAL: You are PROHIBITED from:**
-- ❌ Defining requirements directly without calling orchestrate.sh — single-model analysis misses the technical-vs-business perspective split that Codex and Gemini provide, producing requirements with blind spots
+- ❌ Defining requirements directly without calling orchestrate.sh — single-model analysis misses the technical, business, and external-model perspective split that provider fanout supplies, producing requirements with blind spots
 - ❌ Using direct analysis instead of orchestrate.sh
 - ❌ Claiming you're "simulating" the workflow
 - ❌ Proceeding to Step 3 without running this command
@@ -302,7 +303,7 @@ Read the synthesis file and present:
 **Include attribution:**
 ```
 *Multi-AI Problem Definition powered by Claude Octopus*
-*Providers: 🔴 Codex | 🟡 Gemini | 🔵 Claude*
+*Providers: 🔴 Codex | 🟡 Gemini | 🧭 Antigravity | 🔵 Claude*
 *Full problem definition: $SYNTHESIS_FILE*
 ```
 

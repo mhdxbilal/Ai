@@ -23,6 +23,22 @@ Ask 3 clarifying questions:
 
 After receiving answers: validate spec path exists, set overrides, proceed.
 
+### Step 1.5: Ensure plugin root is resolvable (run via Bash tool)
+
+```bash
+OCTO_ROOT="${HOME}/.claude-octopus/plugin"
+if [[ ! -x "$OCTO_ROOT/scripts/orchestrate.sh" ]]; then
+  helper="$OCTO_ROOT/scripts/helpers/ensure-plugin-root.sh"
+  if [[ ! -x "$helper" ]]; then
+    helper="$(find "${HOME}/.claude/plugins/cache" "${HOME}/Library/Application Support/Claude" "${LOCALAPPDATA:-/dev/null}/Claude" "${XDG_DATA_HOME:-${HOME}/.local/share}/Claude" -maxdepth 8 -path "*/nyldn-plugins/octo/*/scripts/helpers/ensure-plugin-root.sh" -print -quit 2>/dev/null)"
+  fi
+  [[ -x "$helper" ]] && bash "$helper" >/dev/null 2>&1 || true
+fi
+test -x "$OCTO_ROOT/scripts/orchestrate.sh" && echo "plugin-root:ok" || echo "plugin-root:missing"
+```
+
+If the output is `plugin-root:missing`, stop and ask the user to run `/octo:setup`.
+
 ### Step 2: Check Provider Availability & Display Banner
 
 Check via bash:
@@ -44,6 +60,7 @@ fi
 echo "PROVIDER_CHECK_START"
 printf "codex:%s\n" "$(command -v codex >/dev/null 2>&1 && echo available || echo missing)"
 printf "gemini:%s\n" "$(command -v gemini >/dev/null 2>&1 && echo available || echo missing)"
+printf "agy:%s\n" "$(command -v agy >/dev/null 2>&1 && echo available || echo missing)"
 printf "perplexity:%s\n" "$([ -n "${PERPLEXITY_API_KEY:-}" ] && echo available || echo missing)"
 printf "opencode:%s\n" "$(command -v opencode >/dev/null 2>&1 && echo available || echo missing)"
 printf "copilot:%s\n" "$(command -v copilot >/dev/null 2>&1 && echo available || echo missing)"
@@ -62,6 +79,7 @@ Pipeline: Parse → Scenarios → Embrace → Holdout → Score → Report
 Providers:
   🔴 Codex CLI: [Available ✓ / Not installed ✗] - Scenario generation + holdout evaluation
   🟡 Gemini CLI: [Available ✓ / Not installed ✗] - Cross-provider diversity + blind review
+  🧭 Antigravity CLI: [Available ✓ / Not installed ✗] - Additional external-model challenge
   🔵 Claude: Available ✓ - Orchestration, synthesis, satisfaction scoring
 
 Spec: <spec-path>
@@ -69,7 +87,7 @@ Estimated cost: $0.50-2.00 (~20-30 agent calls)
 ```
 
 **PROHIBITED: Displaying only Claude without listing all providers.**
-If both external providers are missing, warn but proceed (Claude-only mode is supported).
+If no external providers are available, warn but proceed (Claude-only mode is supported).
 
 ### EXECUTION MECHANISM — NON-NEGOTIABLE
 

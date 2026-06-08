@@ -1,6 +1,6 @@
 ---
 name: flow-deliver
-description: "Multi-AI validation, scoring, and review using Codex and Gemini CLIs (Double Diamond Deliver phase)"
+description: "Multi-AI validation, scoring, and review using available external providers (Double Diamond Deliver phase)"
 ---
 
 > **Host: Codex CLI** — This skill was designed for Claude Code and adapted for Codex.
@@ -101,6 +101,7 @@ If `OCTO_ALLOWED_PROVIDERS` is set, treat it as the source of truth for which pr
 Provider Availability:
 🔴 Codex CLI: ${codex_status} - Code quality analysis
 🟡 Gemini CLI: ${gemini_status} - Security and edge cases
+🧭 Antigravity CLI: ${agy_status} - Additional external-model challenge
 🔵 Claude: Available ✓ - Synthesis and recommendations
 
 💰 Estimated Cost: $0.02-0.08
@@ -115,6 +116,7 @@ Provider Availability:
 Provider Availability:
 🔴 Codex CLI: ${codex_status} - Structure and logic analysis
 🟡 Gemini CLI: ${gemini_status} - Content quality and completeness
+🧭 Antigravity CLI: ${agy_status} - Additional external-model challenge
 🔵 Claude: Available ✓ - Synthesis and recommendations
 
 💰 Estimated Cost: $0.02-0.08
@@ -271,7 +273,7 @@ Read the validation file and present:
 **Include attribution:**
 ```
 *Multi-AI Validation powered by Claude Octopus*
-*Providers: 🔴 Codex | 🟡 Gemini | 🔵 Claude*
+*Providers: 🔴 Codex | 🟡 Gemini | 🧭 Antigravity | 🔵 Claude*
 *Full validation report: $VALIDATION_FILE*
 ```
 
@@ -298,7 +300,7 @@ if [[ -n "$PR_NUM" ]]; then
 ${REVIEW_SUMMARY}
 
 *Multi-AI validation by Claude Octopus (/octo:deliver)*
-*Providers: 🔴 Codex | 🟡 Gemini | 🔵 Claude*"
+*Providers: 🔴 Codex | 🟡 Gemini | 🧭 Antigravity | 🔵 Claude*"
 
     echo "Validation report posted to PR #${PR_NUM}"
 

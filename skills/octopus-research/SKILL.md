@@ -81,6 +81,7 @@ AskUserQuestion({
 ```bash
 command -v codex &> /dev/null && codex_status="Available ✓" || codex_status="Not installed ✗"
 command -v gemini &> /dev/null && gemini_status="Available ✓" || gemini_status="Not installed ✗"
+command -v agy &> /dev/null && agy_status="Available ✓" || agy_status="Not installed ✗"
 ```
 
 **Display this banner BEFORE orchestrate.sh execution:**
@@ -92,6 +93,7 @@ command -v gemini &> /dev/null && gemini_status="Available ✓" || gemini_status
 Provider Availability:
 🔴 Codex CLI: ${codex_status}
 🟡 Gemini CLI: ${gemini_status}
+🧭 Antigravity CLI: ${agy_status}
 🔵 Claude: Available ✓ (Strategic synthesis)
 
 Research Parameters:
@@ -104,7 +106,7 @@ Research Parameters:
 ```
 
 **Validation:**
-- If BOTH Codex and Gemini unavailable → STOP, suggest: `/octo:setup`
+- If no external providers are available → STOP, suggest: `/octo:setup`
 - If ONE unavailable → Continue with available provider(s)
 - If BOTH available → Proceed normally
 
@@ -167,7 +169,7 @@ Read the synthesis file and format according to `format_choice`:
 **Include attribution:**
 ```
 *Multi-AI Research powered by Claude Octopus*
-*Providers: 🔴 Codex | 🟡 Gemini | 🔵 Claude*
+*Providers: 🔴 Codex | 🟡 Gemini | 🧭 Antigravity | 🔵 Claude*
 *Full synthesis: $SYNTHESIS_FILE*
 ```
 
@@ -180,7 +182,7 @@ Create tasks to track execution progress:
 // At start of skill execution
 TaskCreate({
   subject: "Execute deep research with multi-AI providers",
-  description: "Run orchestrate.sh probe with Codex and Gemini for deep research",
+  description: "Run orchestrate.sh probe with available providers for deep research",
   activeForm: "Running multi-AI deep research"
 })
 

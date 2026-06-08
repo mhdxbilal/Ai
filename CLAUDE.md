@@ -206,6 +206,7 @@ echo "Progress: 50%" > ~/.claude/scratchpad/$(cat ~/.claude/session-id)/phase1-p
 Before running workflows, check provider availability:
 - Codex CLI: `command -v codex` or check for OPENAI_API_KEY
 - Gemini CLI: `command -v gemini` or check for GEMINI_API_KEY
+- Antigravity CLI: `command -v agy`
 - Perplexity: check for PERPLEXITY_API_KEY (API-only, no CLI needed)
 - OpenRouter: check for OPENROUTER_API_KEY
 - Ollama: `command -v ollama` + server health at http://localhost:11434
@@ -228,6 +229,7 @@ Providers:
 Always be mindful that external CLIs cost money:
 - 🔴 Codex: ~$0.01-0.15 per query depending on model (GPT-5.4 $2.50/$15 MTok, GPT-5.3-Codex $1.75/$14, Mini $0.25/$2.00 MTok)
 - 🟡 Gemini: ~$0.01-0.03 per query (Gemini Pro)
+- 🧭 Antigravity CLI (`agy`): Included with the user's Antigravity access/subscription; backend cost depends on selected `OCTOPUS_AGY_MODEL`
 - 🟣 Perplexity: ~$0.01-0.05 per query (Sonar Pro $3/$15 MTok, Sonar $1/$1 MTok)
 - 🔵 Claude (Sonnet 4.6): Included with Claude Code subscription
 - 🔵 Claude (Opus 4.8, default when `SUPPORTS_OPUS_4_8=true`): $5/$25 per MTok input/output. 1M context native. Use `high` effort by default; use `xhigh` for hard implementation, deep review, and long-running asynchronous workflows.

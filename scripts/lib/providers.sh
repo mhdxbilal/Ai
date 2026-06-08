@@ -733,6 +733,12 @@ check_provider_health() {
                 fi
             fi
             ;;
+        agy|antigravity)
+            if ! command -v agy &>/dev/null; then
+                echo "agy CLI not found in PATH" >&2
+                return 1
+            fi
+            ;;
         claude)
             if ! command -v claude &>/dev/null; then
                 echo "claude CLI not found in PATH" >&2
@@ -976,6 +982,11 @@ detect_providers() {
             gemini_auth="api-key"
         fi
         result="${result}gemini:${gemini_auth} "
+    fi
+
+    # Detect Antigravity CLI (agy)
+    if { ! declare -f octo_provider_allowed >/dev/null 2>&1 || octo_provider_allowed agy; } && command -v agy &>/dev/null; then
+        result="${result}agy:cli "
     fi
 
     # Detect Claude CLI (always available in Claude Code context)

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Add native Antigravity CLI (`agy`) provider detection, fleet selection, stdin print-mode dispatch, model/env configuration, trust markers, docs, and tests (#423).
+
 ## [9.42.3] - 2026-06-03
 
 ### Changed

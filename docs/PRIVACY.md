@@ -22,6 +22,7 @@ The plugin dispatches prompts to AI providers **you configure**. These calls go 
 |----------|--------------------------|-------------------|
 | Codex (OpenAI) | OpenAI | Your API key or OAuth |
 | Gemini (Google) | Google | Your API key or OAuth |
+| Antigravity CLI (`agy`) | Google Antigravity / selected backend | Your Antigravity CLI auth |
 | Copilot (GitHub) | GitHub | Your Copilot subscription |
 | Qwen (Alibaba) | Alibaba Cloud | Your Qwen OAuth |
 | Ollama | Your local machine | No external calls |

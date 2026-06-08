@@ -88,6 +88,7 @@ Pipeline:
 Providers:
 🔴 Codex CLI: [Available ✓ / Not installed ✗] — Implementation critique
 🟡 Gemini CLI: [Available ✓ / Not installed ✗] — Ecosystem critique
+🧭 Antigravity CLI: [Available ✓ / Not installed ✗] — Additional external-model challenge
 🔵 Claude (Sonnet): Available ✓ — Design + independent critique
 
 Tools:
@@ -274,7 +275,7 @@ fi
 wait
 ```
 
-**🔵 Claude (Sonnet) — independent design critique.** You MUST also write your own adversarial critique. Do NOT just summarize what Codex/Gemini said. Approach the design direction as if you didn't create it — actively look for problems across all four dimensions. This is your independent third perspective, same as in `/octo:debate`.
+**🔵 Claude (Sonnet) — independent design critique.** You MUST also write your own adversarial critique. Do NOT just summarize what external providers said. Approach the design direction as if you didn't create it — actively look for problems across all four dimensions. This is your independent synthesis perspective, same as in `/octo:debate`.
 
 **Display all critiques with provider indicators:**
 ```

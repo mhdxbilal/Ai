@@ -186,7 +186,7 @@ Include attribution footer:
 ```
 Dark Factory Mode powered by Claude Octopus v8.25.0
 Pipeline: Spec → Scenarios → Embrace → Holdout → Score → Report
-Providers: Codex | Gemini | Claude
+Providers: Codex | Gemini | Antigravity | Claude
 ```
 
 ## Error Handling (by step)

@@ -70,6 +70,7 @@ fi
 🐙 **Multi-provider research mode:**
 - 🔴 Codex CLI — Technical implementation patterns and architecture precedents
 - 🟡 Gemini CLI — Market landscape, competitive products, industry trends
+- 🧭 Antigravity CLI — Alternate model perspective via Antigravity provider
 - 🔵 Claude — Domain analysis and strategic synthesis
 
 ```bash

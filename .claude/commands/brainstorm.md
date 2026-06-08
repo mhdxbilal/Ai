@@ -83,6 +83,7 @@ Then display with ACTUAL results — list ALL providers:
 Providers:
 🔴 Codex CLI: [Available ✓ / Not installed ✗] — Technical feasibility and implementation angles
 🟡 Gemini CLI: [Available ✓ / Not installed ✗] — Lateral thinking and ecosystem connections
+🧭 Antigravity CLI: [Available ✓ / Not installed ✗] — Additional external-model challenge
 🔵 Claude: Available ✓ — Synthesis, pattern naming, and moderation
 ```
 
@@ -234,7 +235,7 @@ AskUserQuestion({
 - User's choice was respected
 - If Team mode: visual indicator banner was displayed
 - If Team mode: at least 2 providers were queried via external CLI calls or Agent tool
-- If Team mode: provider-labeled results were shown (🔴 🟡 🔵)
+- If Team mode: provider-labeled results were shown (for example 🔴 🟡 🧭 🔵)
 - If Team mode: cross-perspective synthesis was presented
 - Session ends with a breakthroughs summary
 - Next steps question was asked

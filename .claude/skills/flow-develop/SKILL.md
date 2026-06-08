@@ -5,7 +5,7 @@ aliases:
   - develop-workflow
   - tangle
   - tangle-workflow
-description: Multi-AI implementation using Codex and Gemini CLIs (Double Diamond Develop phase)
+description: Multi-AI implementation using available external providers (Double Diamond Develop phase)
 
   DO NOT use for: simple code edits (use Edit tool), reading/reviewing code,
   built-in commands, or trivial single-file changes.
@@ -164,6 +164,7 @@ If `OCTO_ALLOWED_PROVIDERS` is set, treat it as the source of truth for which pr
 Provider Availability:
 🔴 Codex CLI: ${codex_status} - Code generation and patterns
 🟡 Gemini CLI: ${gemini_status} - Alternative approaches
+🧭 Antigravity CLI: ${agy_status} - Additional external-model challenge
 🔵 Claude: Available ✓ - Integration and quality gates
 
 💰 Estimated Cost: $0.02-0.10
@@ -178,6 +179,7 @@ Provider Availability:
 Provider Availability:
 🔴 Codex CLI: ${codex_status} - Structure and framework application
 🟡 Gemini CLI: ${gemini_status} - Content and narrative development
+🧭 Antigravity CLI: ${agy_status} - Additional external-model challenge
 🔵 Claude: Available ✓ - Integration and quality review
 
 💰 Estimated Cost: $0.02-0.10
@@ -242,7 +244,7 @@ ${HOME}/.claude-octopus/plugin/scripts/orchestrate.sh develop "<user's implement
 ```
 
 **CRITICAL: You are PROHIBITED from:**
-- ❌ Implementing directly without calling orchestrate.sh — single-model implementation misses alternative approaches and edge cases that Codex and Gemini surface through independent analysis
+- ❌ Implementing directly without calling orchestrate.sh — single-model implementation misses alternative approaches and edge cases that external providers surface through independent analysis
 - ❌ Writing code without multi-provider perspectives
 - ❌ Claiming you're "simulating" the workflow
 - ❌ Proceeding to Step 4 without running this command
@@ -328,7 +330,7 @@ fi
 Read the synthesis file and present:
 - Recommended approach
 - Implementation steps
-- Code overview from all perspectives (Codex, Gemini, Claude)
+- Code overview from all available perspectives
 - Quality gates results
 - Request user confirmation before implementing
 
@@ -338,7 +340,7 @@ Read the synthesis file and present:
 ```
 ---
 *Multi-AI Implementation powered by Claude Octopus*
-*Providers: 🔴 Codex | 🟡 Gemini | 🔵 Claude*
+*Providers: 🔴 Codex | 🟡 Gemini | 🧭 Antigravity | 🔵 Claude*
 *Full implementation plan: $SYNTHESIS_FILE*
 ```
 

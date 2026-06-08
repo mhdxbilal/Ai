@@ -204,7 +204,7 @@ DIFF:
 ${DIFF_CONTENT}" | gemini -p "" -o text --approval-mode yolo > /tmp/octopus-review-gemini.md 2>/dev/null &
 ```
 
-**Wait for external reviews to complete, then synthesize all findings (Claude + Codex + Gemini) into a unified quality assessment.** If external providers are unavailable, fall back to the Claude-only review below.
+**Wait for external reviews to complete, then synthesize all findings from Claude plus available external providers into a unified quality assessment.** If external providers are unavailable, fall back to the Claude-only review below.
 
 **Claude (you) performs the full quality review regardless:**
 

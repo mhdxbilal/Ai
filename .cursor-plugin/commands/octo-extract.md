@@ -89,10 +89,11 @@ Reading all pages may use 33,750 tokens (~34 API calls).
 // Check if multi-AI providers are available
 const codexAvailable = await checkCommandAvailable('codex');
 const geminiAvailable = await checkCommandAvailable('gemini');
+const agyAvailable = await checkCommandAvailable('agy');
 
-if (!codexAvailable && !geminiAvailable) {
+if (!codexAvailable && !geminiAvailable && !agyAvailable) {
   console.log("⚠️ Multi-AI providers not detected. Running in single-provider mode.");
-  console.log("For best results, run `/octo:setup` to configure Codex and Gemini.");
+  console.log("For best results, run `/octo:setup` to configure Codex, Gemini, Antigravity, or another provider.");
 }
 ```
 
@@ -1140,7 +1141,7 @@ await writeFile(`${config.outputDir}/README.md`, `
 **Target:** ${config.target}
 **Mode:** ${config.mode}
 **Depth:** ${config.depth}
-**Providers Used:** ${config.multiAI ? 'Claude, Codex, Gemini' : 'Claude only'}
+**Providers Used:** ${config.multiAI ? 'Claude plus available external providers' : 'Claude only'}
 
 ## Summary
 
@@ -1475,8 +1476,9 @@ This command leverages Claude Octopus multi-AI orchestration when available:
 - **Claude**: Synthesis, conflict resolution, final documentation
 - **Codex**: Code-level analysis, type extraction, architecture inference
 - **Gemini**: Pattern recognition, alternative interpretations, UX insights
+- **Antigravity**: Additional external-model perspective when installed
 
-Consensus threshold: 67% (2/3 providers must agree for high confidence)
+Consensus threshold: majority of participating providers must agree for high confidence
 
 If providers are not available, the command gracefully degrades to single-provider mode.
 

@@ -59,6 +59,7 @@ If user says "skip" for any question, note assumptions and proceed.
 provider_status=$(bash "${HOME}/.claude-octopus/plugin/scripts/helpers/check-providers.sh")
 codex_status=$(echo "$provider_status" | grep -q '^codex:available' && echo "Available" || echo "Not installed")
 gemini_status=$(echo "$provider_status" | grep -q '^gemini:available' && echo "Available" || echo "Not installed")
+agy_status=$(echo "$provider_status" | grep -q '^agy:available' && echo "Available" || echo "Not installed")
 ```
 
 **Display this banner BEFORE orchestrate.sh execution:**
@@ -70,6 +71,7 @@ Spec Phase: Generating structured specification for [project name]
 Provider Availability:
 Codex CLI: ${codex_status}
 Gemini CLI: ${gemini_status}
+Antigravity CLI: ${agy_status}
 Claude: Available (Synthesis & NLSpec generation)
 
 Estimated Cost: $0.01-0.05
@@ -77,7 +79,7 @@ Estimated Time: 3-7 minutes
 ```
 
 **Validation:**
-- If BOTH Codex and Gemini unavailable -> STOP, suggest: `/octo:setup`
+- If no external providers are available -> STOP, suggest: `/octo:setup`
 - If ONE unavailable -> Continue with available provider(s)
 - If BOTH available -> Proceed normally
 
@@ -383,7 +385,7 @@ Next steps:
 **Include attribution:**
 ```
 Multi-AI Research powered by Claude Octopus
-Providers: Codex | Gemini | Claude
+Providers: Codex | Gemini | Antigravity | Claude
 ```
 
 

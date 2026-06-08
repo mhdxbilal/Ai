@@ -171,6 +171,7 @@ Quick:
 echo "PROVIDER_CHECK_START"
 printf "codex:%s\n" "$(command -v codex >/dev/null 2>&1 && echo available || echo missing)"
 printf "gemini:%s\n" "$(command -v gemini >/dev/null 2>&1 && echo available || echo missing)"
+printf "agy:%s\n" "$(command -v agy >/dev/null 2>&1 && echo available || echo missing)"
 printf "perplexity:%s\n" "$([ -n "${PERPLEXITY_API_KEY:-}" ] && echo available || echo missing)"
 printf "opencode:%s\n" "$(command -v opencode >/dev/null 2>&1 && echo available || echo missing)"
 printf "copilot:%s\n" "$(command -v copilot >/dev/null 2>&1 && echo available || echo missing)"
@@ -189,6 +190,7 @@ Then display the banner with ACTUAL results — list ALL providers with their re
 Providers:
 🔴 Codex CLI: [Available ✓ / Not installed ✗] - [role in this workflow]
 🟡 Gemini CLI: [Available ✓ / Not installed ✗] - [role in this workflow]
+🧭 Antigravity CLI: [Available ✓ / Not installed ✗] - [role in this workflow]
 🟤 OpenCode: [Available ✓ / Not installed ✗] - [role in this workflow]
 🔵 Claude: Available ✓ - [your role]
 ```

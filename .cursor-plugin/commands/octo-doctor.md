@@ -55,7 +55,7 @@ After diagnostics complete, analyze the output for fixable issues. For EACH fixa
 
 **Priority order for fixes:**
 
-1. **Missing providers** — offer to install Codex/Gemini CLI
+1. **Missing providers** — offer to install available external provider CLIs such as Codex, Gemini, or Antigravity
 2. **Expired auth** — offer to run login commands
 3. **RTK not installed** — offer brew/cargo install (saves 60-90% tokens)
 4. **RTK hook not configured on macOS/Linux** — offer `rtk init -g`

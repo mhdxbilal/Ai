@@ -69,6 +69,12 @@ build_provider_env() {
                 PROVIDER_ENV_ARRAY+=("${_trace_env[@]}")
             fi
             ;;
+        agy*|antigravity)
+            # Antigravity CLI relies on its inherited desktop/session environment
+            # for prompt-mode behavior and auth context. A stripped env -i shell can
+            # cause it to ignore stdin and act on the workspace instead.
+            PROVIDER_ENV_ARRAY=()
+            ;;
         perplexity*)
             # perplexity_execute is a shell function — env -i cannot exec it (#300)
             if [[ -z "${PERPLEXITY_API_KEY:-}" ]]; then

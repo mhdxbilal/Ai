@@ -115,6 +115,11 @@ octo_provider_allowed() {
                     gemini|gemini-*) return 0 ;;
                 esac
                 ;;
+            agy|antigravity)
+                case "$provider" in
+                    agy|agy-*|antigravity) return 0 ;;
+                esac
+                ;;
             cursor|cursor-agent|xai)
                 [[ "$provider" == "cursor-agent" ]] && return 0
                 ;;

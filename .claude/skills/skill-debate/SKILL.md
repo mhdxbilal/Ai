@@ -4,7 +4,7 @@ effort: high
 user-invocable: true
 aliases:
   - debate
-description: Structured four-way AI debates between Claude, Sonnet, Gemini, and Codex — use for critical decisions
+description: Structured multi-provider AI debates between Claude and available advisors — use for critical decisions
 context: fork
 trigger: |
   AUTOMATICALLY ACTIVATE when user says:
@@ -45,7 +45,7 @@ Participants:
 🟤 Qwen CLI - Alternative model perspective (if available)
 ```
 
-**Core four always participate:** Codex (🔴), Gemini (🟡), Sonnet (🟠), and Claude/Opus (🐙). When additional providers are detected (Copilot 🟢, Qwen 🟤), they join as supplementary participants — extra perspectives at zero additional cost.
+**Core participants are selected from available providers.** Codex (🔴), Gemini (🟡), Antigravity (🧭), Sonnet (🟠), Claude/Opus (🐙), and other detected providers can participate based on routing and availability.
 
 **This is NOT optional.** Users need to see which AI providers are active. External API calls (🔴 🟡) use provider API keys. Sonnet (🟠), Copilot (🟢), and Qwen (🟤) are included with existing subscriptions.
 
@@ -84,7 +84,7 @@ printf '%s' "YOUR PROMPT HERE" | gemini -p "" -o text --approval-mode yolo
 
 ---
 
-You are Claude (Opus), a **participant and moderator** in a four-way AI debate system. You consult external advisors (Gemini, Codex) via CLI, launch Sonnet as an independent analyst via Agent tool, contribute your own analysis, and synthesize all perspectives for the user.
+You are Claude (Opus), a **participant and moderator** in a multi-provider AI debate system. You consult external advisors (Gemini, Codex, Antigravity, and other available providers) via CLI, launch Sonnet as an independent analyst via Agent tool when available, contribute your own analysis, and synthesize all perspectives for the user.
 
 **CRITICAL: You are NOT just an orchestrator. You are an active participant with your own voice and opinions.**
 
@@ -163,9 +163,9 @@ Users can mention files naturally - you resolve them to full paths:
 
 ## Your Role: Participant + Moderator
 
-### Four-Way Debate Structure
+### Multi-Provider Debate Structure
 
-This is a **four-way debate** with three distinct advisor voices plus you as moderator:
+This is a **provider debate** with selected advisor voices plus you as moderator:
 
 ```
      User Question
@@ -269,6 +269,7 @@ When the user invokes `/debate`:
 ### Step 1: Check Provider Availability & Display Banner
 
 **MANDATORY: You MUST use the Bash tool to run this provider check BEFORE displaying the banner. Do NOT skip it. Do NOT assume availability.**
+For provider checks, never use `grep -P`; use portable `grep -E`/`case` checks and capture the exit code so missing optional CLIs do not fail open or abort the command.
 
 ```bash
 bash "${HOME}/.claude-octopus/plugin/scripts/helpers/check-providers.sh"
@@ -284,13 +285,14 @@ Then display the banner with real provider status:
 Provider Availability:
 🔴 Codex CLI: [Available ✓ / Not installed ✗]
 🟡 Gemini CLI: [Available ✓ / Not installed ✗]
+🧭 Antigravity CLI: [Available ✓ / Not installed ✗]
 🟠 Sonnet 4.6: Available ✓ (via Agent tool — no extra cost)
 🐙 Claude (Opus): Available ✓ (Moderator and participant)
 ```
 
 **If providers are missing:**
-- If BOTH are unavailable: Inform user that debate requires at least one external provider and suggest running `/octo:setup` to configure them
-- If ONE is unavailable: Note which provider is missing and proceed with available provider(s) and Claude
+- If all external providers are unavailable: Inform user that debate requires at least one external provider and suggest running `/octo:setup` to configure them
+- If one or more providers are unavailable: Note which providers are missing and proceed with available provider(s) and Claude
 
 ### Step 2: Ask Clarifying Questions
 
@@ -591,8 +593,8 @@ Claude:
    - Calls printf '%s' "Should we use Redis..." | gemini -p "" -o text --approval-mode yolo
    - Calls codex exec --skip-git-repo-check "Should we use Redis or in-memory cache?"
    - Waits for Sonnet completion
-   - Writes own analysis (Opus) considering all three advisor perspectives
-4. Writes synthesis.md with final recommendation from all four participants
+   - Writes own analysis (Opus) considering all advisor perspectives
+4. Writes synthesis.md with final recommendation from all participants
 5. Presents results in chat
 ```
 
@@ -607,14 +609,14 @@ Claude:
    - 🟠 Sonnet: Implementation feasibility analysis of auth.ts
    - 🟡 Gemini: Strategic/ecosystem analysis of auth.ts
    - 🔴 Codex: Technical implementation analysis of auth.ts
-   - 🐙 Claude (Opus): Your independent analysis considering all three
+   - 🐙 Claude (Opus): Your independent analysis considering all advisors
 4. Round 2:
    - 🟠 Sonnet: Responds to other participants' points
    - 🟡 Gemini: Challenges Codex/Sonnet/Claude's points
    - 🔴 Codex: Challenges Gemini/Sonnet/Claude's points
    - 🐙 Claude: You challenge advisor points
 5. Round 3:
-   - All four: Final positions
+   - All participants: Final positions
 6. Synthesis with quality scores for each advisor
 7. Present results with cost tracking
 ```
@@ -625,9 +627,9 @@ Claude:
 
 Before completing a debate, ensure:
 
-- [ ] All rounds completed for all four participants (Gemini, Codex, Sonnet, Claude)
+- [ ] All rounds completed for selected participants
 - [ ] Your independent analysis (Opus) written for each round (not just summaries)
-- [ ] Synthesis.md includes all four perspectives
+- [ ] Synthesis.md includes all participating perspectives
 - [ ] Quality scores recorded for advisor responses
 - [ ] Cost tracking updated (if in claude-octopus context)
 - [ ] Results presented to user in chat
@@ -688,7 +690,7 @@ After debate completes, export results via document-delivery skill:
 - **Version**: v4.8
 - **Repository**: https://github.com/wolverin0/claude-skills
 - **License**: MIT
-- **Enhancements**: Claude-Octopus integration (session-aware storage, quality gates, cost tracking, document export, four-way debate with Sonnet)
+- **Enhancements**: Claude-Octopus integration (session-aware storage, quality gates, cost tracking, document export, provider debate with Sonnet)
 
 ---
 

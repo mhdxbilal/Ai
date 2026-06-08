@@ -1,6 +1,6 @@
 ---
 name: skill-debate
-description: "Structured four-way AI debates between Claude, Sonnet, Gemini, and Codex — use for critical decisions"
+description: "Structured multi-provider AI debates between Claude and available advisors — use for critical decisions"
 ---
 
 > **Host: Codex CLI** — This skill was designed for Claude Code and adapted for Codex.
@@ -28,7 +28,7 @@ Participants:
 🟤 Qwen CLI - Alternative model perspective (if available)
 ```
 
-**Core participants must be selected from actual available providers:** Codex (🔴), Gemini (🟡), Sonnet (🟠), and current host model (🐙). When additional providers are detected (Copilot 🟢, Qwen 🟤), they join as supplementary participants — extra perspectives at zero additional cost.
+**Core participants are selected from available providers.** Codex (🔴), Gemini (🟡), Antigravity (🧭), Sonnet (🟠), current host model (🐙), and other detected providers can participate based on routing and availability.
 
 **This is NOT optional.** Users need to see which AI providers are active. External API calls (🔴 🟡) use provider API keys. Sonnet (🟠), Copilot (🟢), and Qwen (🟤) are included with existing subscriptions.
 
@@ -50,12 +50,10 @@ YOUR PROMPT HERE"
 
 **Gemini CLI** (non-interactive headless mode):
 ```bash
-printf '%s' "YOUR PROMPT HERE" | gemini -m "${OCTOPUS_GEMINI_MODEL:-gemini-2.5-flash}" -p "" -o text --approval-mode yolo
+printf '%s' "YOUR PROMPT HERE" | gemini -p "" -o text --approval-mode yolo
 ```
-
 - MUST use `-p ""` to trigger headless mode
 - MUST pipe prompt via stdin (avoids OS arg length limits)
-- MUST use `-m` to specify the model — omitting it falls back to the Gemini CLI's own default (`gemini-2.5-pro`) instead of the plugin-configured model
 - Do NOT use `-y` (deprecated, replaced by `--approval-mode yolo`)
 
 **Flags that DO NOT EXIST (will cause errors):**
@@ -67,7 +65,7 @@ printf '%s' "YOUR PROMPT HERE" | gemini -m "${OCTOPUS_GEMINI_MODEL:-gemini-2.5-f
 - `gemini -y` — DEPRECATED, use `--approval-mode yolo`
 
 
-You are current host model, a **participant and moderator** in a four-way AI debate system. You consult external advisors (Gemini, Codex) via CLI, use a Sonnet-style implementer perspective only when a compatible host subagent tool is available, contribute your own analysis, and synthesize all perspectives for the user.
+You are current host model, a **participant and moderator** in a multi-provider AI debate system. You consult external advisors (Gemini, Codex, Antigravity, and other available providers) via CLI, use a Sonnet-style implementer perspective only when a compatible host subagent tool is available when available, contribute your own analysis, and synthesize all perspectives for the user.
 
 **CRITICAL: You are NOT just an orchestrator. You are an active participant with your own voice and opinions.**
 
@@ -143,9 +141,9 @@ Users can mention files naturally - you resolve them to full paths:
 
 ## Your Role: Participant + Moderator
 
-### Four-Way Debate Structure
+### Multi-Provider Debate Structure
 
-This is a **four-way debate** with three distinct advisor voices plus you as moderator:
+This is a **provider debate** with selected advisor voices plus you as moderator:
 
 ```
      User Question
@@ -247,14 +245,13 @@ When the user invokes `/debate`:
 ### Step 1: Check Provider Availability & Display Banner
 
 **MANDATORY: You MUST use the native shell command tool to run this provider check BEFORE displaying the banner. Do NOT skip it. Do NOT assume availability.**
+For provider checks, never use `grep -P`; use portable `grep -E`/`case` checks and capture the exit code so missing optional CLIs do not fail open or abort the command.
 
 ```bash
 bash "${HOME}/.claude-octopus/plugin/scripts/helpers/check-providers.sh"
 ```
 
 **Use the ACTUAL results below. PROHIBITED: Showing only "🔵 Claude: Available ✓" without listing all providers.**
-
-Verification commands used during setup or provider checks must be portable in the active shell. Use `rg`, POSIX `grep -E`, or purpose-built helper scripts; never use `grep -P`. Do not write checks that print a clean result after a command error, such as `cmd && echo found || echo clean`; capture the exit code and report tool failure separately from "not found".
 
 Then display the banner with real provider status:
 ```
@@ -264,13 +261,14 @@ Then display the banner with real provider status:
 Provider Availability:
 🔴 Codex CLI: [Available ✓ / Not installed ✗]
 🟡 Gemini CLI: [Available ✓ / Not installed ✗]
+🧭 Antigravity CLI: [Available ✓ / Not installed ✗]
 🟠 Sonnet 4.6: available only when this Codex session exposes a compatible host subagent tool
 🐙 current host model: Available ✓ (Moderator and participant)
 ```
 
 **If providers are missing:**
-- If BOTH are unavailable: Inform user that debate requires at least one external provider and suggest running `/octo:setup` to configure them
-- If ONE is unavailable: Note which provider is missing and proceed with available provider(s) and Claude
+- If all external providers are unavailable: Inform user that debate requires at least one external provider and suggest running `/octo:setup` to configure them
+- If one or more providers are unavailable: Note which providers are missing and proceed with available provider(s) and Claude
 
 ### Step 2: Ask Clarifying Questions
 
@@ -407,7 +405,7 @@ For each round:
 
 #### 5.1: Consult Gemini
 ```bash
-printf '%s' "${QUESTION}" | gemini -m "${OCTOPUS_GEMINI_MODEL:-gemini-2.5-flash}" -p "" -o text --approval-mode yolo > "${DEBATE_DIR}/rounds/r001_gemini.md"
+printf '%s' "${QUESTION}" | gemini -p "" -o text --approval-mode yolo > "${DEBATE_DIR}/rounds/r001_gemini.md"
 ```
 
 #### 5.2: Consult Codex
@@ -567,11 +565,11 @@ Claude:
 2. Writes context.md with question
 3. Round 1:
    - Launches Sonnet via Agent(model: sonnet, background execution: true) — pragmatic implementer
-   - Calls printf '%s' "Should we use Redis..." | gemini -m "${OCTOPUS_GEMINI_MODEL:-gemini-2.5-flash}" -p "" -o text --approval-mode yolo
+   - Calls printf '%s' "Should we use Redis..." | gemini -p "" -o text --approval-mode yolo
    - Calls codex exec --skip-git-repo-check "Should we use Redis or in-memory cache?"
    - Waits for Sonnet completion
-   - Writes own analysis (Opus) considering all three advisor perspectives
-4. Writes synthesis.md with final recommendation from all four participants
+   - Writes own analysis (Opus) considering all advisor perspectives
+4. Writes synthesis.md with final recommendation from all participants
 5. Presents results in chat
 ```
 
@@ -586,14 +584,14 @@ Claude:
    - 🟠 Sonnet: Implementation feasibility analysis of auth.ts
    - 🟡 Gemini: Strategic/ecosystem analysis of auth.ts
    - 🔴 Codex: Technical implementation analysis of auth.ts
-   - 🐙 current host model: Your independent analysis considering all three
+   - 🐙 current host model: Your independent analysis considering all advisors
 4. Round 2:
    - 🟠 Sonnet: Responds to other participants' points
    - 🟡 Gemini: Challenges Codex/Sonnet/Claude's points
    - 🔴 Codex: Challenges Gemini/Sonnet/Claude's points
    - 🐙 Claude: You challenge advisor points
 5. Round 3:
-   - All four: Final positions
+   - All participants: Final positions
 6. Synthesis with quality scores for each advisor
 7. Present results with cost tracking
 ```
@@ -603,9 +601,9 @@ Claude:
 
 Before completing a debate, ensure:
 
-- [ ] All rounds completed for all four participants (Gemini, Codex, Sonnet, Claude)
+- [ ] All rounds completed for selected participants
 - [ ] Your independent analysis (Opus) written for each round (not just summaries)
-- [ ] Synthesis.md includes all four perspectives
+- [ ] Synthesis.md includes all participating perspectives
 - [ ] Quality scores recorded for advisor responses
 - [ ] Cost tracking updated (if in claude-octopus context)
 - [ ] Results presented to user in chat
@@ -664,7 +662,7 @@ After debate completes, export results via document-delivery skill:
 - **Version**: v4.8
 - **Repository**: https://github.com/wolverin0/claude-skills
 - **License**: MIT
-- **Enhancements**: Claude-Octopus integration (session-aware storage, quality gates, cost tracking, document export, four-way debate with Sonnet)
+- **Enhancements**: Claude-Octopus integration (session-aware storage, quality gates, cost tracking, document export, provider debate with Sonnet)
 
 
 **Ready to debate!** Users can invoke with `/debate <question>` or natural language.

@@ -167,7 +167,7 @@ AskUserQuestion({
 })
 ```
 
-**Missing providers (Codex/Gemini not installed):**
+**Missing optional providers:**
 ```javascript
 AskUserQuestion({
   questions: [{
@@ -205,7 +205,7 @@ Offer to run the login command for the expired provider.
 | `conflicts` | Conflicting plugins detection |
 | `agents` | Agent definitions, worktree isolation, CLI registration, version compatibility |
 | `recurrence` | Failure pattern detection — flags repeated quality gate failures, source hotspots, 48h trends |
-| `deps` | Software dependencies — Node.js, jq, Codex/Gemini CLIs, RTK token compression (gain stats + hook status), statusline resolver, recommended plugins |
+| `deps` | Software dependencies — Node.js, jq, Codex, Gemini, Antigravity CLIs, RTK token compression (gain stats + hook status), statusline resolver, recommended plugins |
 
 ---
 

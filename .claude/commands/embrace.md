@@ -136,6 +136,7 @@ Phases: 🔍 Discover → 🎯 Define → 🛠️ Develop → ✅ Deliver
 
 Provider Availability:
 🔴 Codex CLI: [status]    🟡 Gemini CLI: [status]
+🧭 Antigravity CLI: [status]
 🟣 Perplexity: [status]   🟤 OpenCode: [status]
 🔵 Claude: Available ✓
 
