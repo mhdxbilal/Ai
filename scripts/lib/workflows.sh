@@ -1019,6 +1019,13 @@ ${plan_block}"
     # Step 1: Decompose into validated subtasks
     log INFO "Step 1: Task decomposition..."
 
+    local repo_file_map=""
+    if git -C "$PROJECT_ROOT" rev-parse --show-toplevel >/dev/null 2>&1; then
+        repo_file_map="Repository files available for write scopes (from git ls-files, first 200):
+$(git -C "$PROJECT_ROOT" ls-files 2>/dev/null | sed -n 1,200p)
+"
+    fi
+
     local decompose_prompt="Decompose this task into subtasks that can be executed in parallel.
 Each subtask should be:
 - Self-contained and independently verifiable
@@ -1029,7 +1036,8 @@ Each subtask should be:
 
 **Cohesion rule:** If the task produces a single deliverable (one file, one script, one page, one config), keep it as ONE subtask — do not split it. Only decompose when subtasks are truly independent with no cross-file references between them. Aim for 2-6 subtasks; fewer is better when the work is tightly coupled.
 
-${context}Task: $resolved_prompt
+${context}${repo_file_map}
+Task: $resolved_prompt
 
 Output as numbered list with [CODING] or [REASONING] prefix for each subtask."
 
