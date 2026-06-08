@@ -1231,12 +1231,17 @@ Task: $resolved_prompt
 Output as numbered list with [CODING] or [REASONING] prefix for each subtask."
 
     local subtasks
-    subtasks=$(run_agent_sync "gemini" "$decompose_prompt" 120 "researcher" "tangle") || \
-    subtasks=$(run_agent_sync "codex" "$decompose_prompt" 120 "researcher" "tangle") || {
+    local tangle_decompose_agent tangle_decompose_fallback_agent tangle_direct_agent
+    tangle_decompose_agent=$(octopus_agent_override "tangle" "decompose" "gemini")
+    tangle_decompose_fallback_agent=$(octopus_agent_override "tangle" "decompose_fallback" "codex")
+    tangle_direct_agent=$(octopus_agent_override "tangle" "direct" "codex")
+
+    subtasks=$(run_agent_sync "$tangle_decompose_agent" "$decompose_prompt" 120 "researcher" "tangle") || \
+    subtasks=$(run_agent_sync "$tangle_decompose_fallback_agent" "$decompose_prompt" 120 "researcher" "tangle") || {
         log WARN "Decomposition failed with all providers, falling back to direct execution"
         local direct_prompt
         direct_prompt=$(build_tangle_subtask_prompt "$resolved_prompt" "Implement the full task directly because decomposition failed with all providers.")
-        spawn_agent "codex" "$direct_prompt" "tangle-${task_group}-direct" "implementer" "tangle"
+        spawn_agent "$tangle_direct_agent" "$direct_prompt" "tangle-${task_group}-direct" "implementer" "tangle"
         wait
         return
     }
@@ -1255,7 +1260,7 @@ Output as numbered list with [CODING] or [REASONING] prefix for each subtask."
         log WARN "Decomposition produced no parseable subtasks, falling back to direct execution"
         local direct_prompt
         direct_prompt=$(build_tangle_subtask_prompt "$resolved_prompt" "Implement the full task directly because decomposition produced no parseable subtasks.")
-        spawn_agent "codex" "$direct_prompt" "tangle-${task_group}-direct" "implementer" "tangle"
+        spawn_agent "$tangle_direct_agent" "$direct_prompt" "tangle-${task_group}-direct" "implementer" "tangle"
         wait
         return
     fi
@@ -1265,7 +1270,7 @@ Output as numbered list with [CODING] or [REASONING] prefix for each subtask."
         log WARN "Unsafe parallel decomposition: ${parallel_safety_reason}"
         local direct_prompt
         direct_prompt=$(build_tangle_subtask_prompt "$resolved_prompt" "Implement the full task directly because parallel decomposition is unsafe: ${parallel_safety_reason}")
-        spawn_agent "codex" "$direct_prompt" "tangle-${task_group}-direct" "implementer" "tangle"
+        spawn_agent "$tangle_direct_agent" "$direct_prompt" "tangle-${task_group}-direct" "implementer" "tangle"
         wait
         return
     fi
@@ -1283,11 +1288,12 @@ Output as numbered list with [CODING] or [REASONING] prefix for each subtask."
 
         local subtask
         subtask=$(echo "$line" | sed 's/^[0-9]*[\.\)]\s*//')
-        local agent="codex"
+        local agent
         local role="implementer"
         local pane_icon="⚙️"
+        agent=$(octopus_agent_override "tangle" "coding" "codex")
         if [[ "$subtask" =~ \[REASONING\] ]]; then
-            agent="gemini"
+            agent=$(octopus_agent_override "tangle" "reasoning" "gemini")
             role="researcher"
             pane_icon="🧠"
         fi
