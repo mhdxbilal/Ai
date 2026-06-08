@@ -1291,6 +1291,9 @@ Output as numbered list with [CODING] or [REASONING] prefix for each subtask."
         local agent
         local role="implementer"
         local pane_icon="⚙️"
+        # Selects the tangle coding agent/provider only. The concrete model for
+        # that provider is still resolved by resolve_octopus_model(), including
+        # its persistent /tmp/octo-model-cache-*.json behavior.
         agent=$(octopus_agent_override "tangle" "coding" "codex")
         if [[ "$subtask" =~ \[REASONING\] ]]; then
             agent=$(octopus_agent_override "tangle" "reasoning" "gemini")

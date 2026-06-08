@@ -12,7 +12,12 @@
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-# Resolve phase/role-specific agent overrides while preserving existing defaults.
+# Resolve phase/role-specific agent/provider overrides while preserving existing defaults.
+#
+# This selects only the agent/provider name used for dispatch. Model selection is
+# still handled later by resolve_octopus_model() in scripts/lib/model-resolver.sh.
+# That resolver may return values from /tmp/octo-model-cache-*.json before reading
+# model environment overrides; clear that cache to force-refresh model selection.
 #
 # Lookup order for phase="tangle", role="coding":
 #   OCTOPUS_TANGLE_CODING_AGENT
