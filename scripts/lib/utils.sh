@@ -166,6 +166,13 @@ sanitize_review_id() {
 # Only allows whitelisted command prefixes
 validate_agent_command() {
     local cmd="$1"
+    local cmd_executable="${cmd%%[[:space:]]*}"
+
+    # Allow the vibe shim only when it is the executable token, not when it
+    # appears later in the command string.
+    if [[ "$cmd_executable" == */vibe-exec.sh ]]; then
+        return 0
+    fi
 
     # Whitelist of allowed command prefixes (v7.19.0: tightened to exact patterns)
     case "$cmd" in
