@@ -34,6 +34,7 @@ Check providers:
 ```bash
 command -v codex &> /dev/null && codex_status="Available" || codex_status="Not installed"
 command -v gemini &> /dev/null && gemini_status="Available" || gemini_status="Not installed"
+command -v agy &> /dev/null && agy_status="Available" || agy_status="Not installed"
 ```
 Display banner:
 ```
@@ -43,13 +44,14 @@ Pipeline: Parse → Scenarios → Embrace → Holdout → Score → Report
 Providers:
   Codex CLI - <status> — Scenario generation + holdout evaluation
   Gemini CLI - <status> — Cross-provider diversity
+  Antigravity CLI - <status> — Additional external-model challenge
   Claude - Orchestration + satisfaction scoring
 
 Spec: <path>
 Estimated: $0.50-2.00 / 15-45 min
 ```
 
-Validation: BOTH external providers unavailable → continue with Claude-only (warn user about reduced diversity). At least one available → proceed normally.
+Validation: All external providers unavailable → continue with Claude-only (warn user about reduced diversity). At least one available → proceed normally.
 
 ### STEP 3: Validate Spec File (MANDATORY — Validation Gate)
 ```bash

@@ -50,7 +50,7 @@ cd "$OCTO_PLUGIN_ROOT" && bash scripts/orchestrate.sh doctor --verbose
 ## Step 2: Run Dependency Check
 
 ```bash
-bash "${HOME}/.claude-octopus/plugin/scripts/install-deps.sh" check
+bash "${OCTO_PLUGIN_ROOT}/scripts/install-deps.sh" check
 ```
 
 ## Step 3: Interactive Remediation (MANDATORY)
@@ -94,13 +94,13 @@ Execute each selected fix, verify it worked, report results.
 If the user asks about a specific area:
 
 ```bash
-cd "${HOME}/.claude-octopus/plugin" && bash scripts/orchestrate.sh doctor providers
-cd "${HOME}/.claude-octopus/plugin" && bash scripts/orchestrate.sh doctor auth
-cd "${HOME}/.claude-octopus/plugin" && bash scripts/orchestrate.sh doctor config
-cd "${HOME}/.claude-octopus/plugin" && bash scripts/orchestrate.sh doctor hooks
-cd "${HOME}/.claude-octopus/plugin" && bash scripts/orchestrate.sh doctor scheduler
-cd "${HOME}/.claude-octopus/plugin" && bash scripts/orchestrate.sh doctor skills
-cd "${HOME}/.claude-octopus/plugin" && bash scripts/orchestrate.sh doctor agents
+cd "${OCTO_PLUGIN_ROOT}" && bash scripts/orchestrate.sh doctor providers
+cd "${OCTO_PLUGIN_ROOT}" && bash scripts/orchestrate.sh doctor auth
+cd "${OCTO_PLUGIN_ROOT}" && bash scripts/orchestrate.sh doctor config
+cd "${OCTO_PLUGIN_ROOT}" && bash scripts/orchestrate.sh doctor hooks
+cd "${OCTO_PLUGIN_ROOT}" && bash scripts/orchestrate.sh doctor scheduler
+cd "${OCTO_PLUGIN_ROOT}" && bash scripts/orchestrate.sh doctor skills
+cd "${OCTO_PLUGIN_ROOT}" && bash scripts/orchestrate.sh doctor agents
 ```
 
 ## Step 5: Token Optimization Report

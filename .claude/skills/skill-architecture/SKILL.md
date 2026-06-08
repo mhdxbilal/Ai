@@ -50,8 +50,7 @@ Provider Availability:
 
 **Validation:**
 - If no external providers are available → STOP, suggest: `/octo:setup`
-- If ONE unavailable → Continue with available provider(s)
-- If BOTH available → Proceed normally
+- If one or more external providers are available → Continue with available provider(s)
 
 **DO NOT PROCEED TO STEP 2 until banner displayed.**
 

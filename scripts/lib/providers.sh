@@ -842,7 +842,7 @@ check_all_providers() {
     local healthy=0 unhealthy=0
     local -a results=()
 
-    for provider in codex gemini claude perplexity openrouter ollama copilot qwen cursor-agent vibe; do
+    for provider in codex gemini agy claude perplexity openrouter ollama copilot qwen cursor-agent vibe; do
         local diag
         if diag=$(check_provider_health "$provider" 2>&1); then
             results+=("  ✓ $provider")

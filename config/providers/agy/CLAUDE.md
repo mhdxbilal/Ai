@@ -35,4 +35,9 @@ When `OCTOPUS_AGY_MODEL` is non-empty and not `default`, Octopus adds:
 - `agy` is not treated as a Gemini CLI wrapper.
 - Gemini-specific flags such as `-o text`, `--approval-mode yolo`, and the
   Gemini fallback helper are not used for Antigravity.
+- Antigravity currently inherits the parent shell environment instead of the
+  stripped `env -i` provider environment because current `agy` releases rely on
+  desktop/session context for auth and prompt-mode behavior. Avoid exporting
+  secrets that are not needed by local CLI tools before running `agy` workflows.
+- `agy --print-timeout` is the primary timeout for Antigravity print mode.
 - This provider was added in response to #423.

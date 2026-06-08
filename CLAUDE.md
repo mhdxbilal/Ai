@@ -15,6 +15,7 @@ When executing Claude Octopus workflows, you MUST display visual indicators so u
 | 🐙 | Claude Octopus multi-AI mode active | Multiple APIs |
 | 🔴 | Codex CLI executing | User's OPENAI_API_KEY |
 | 🟡 | Gemini CLI executing | User's GEMINI_API_KEY |
+| 🧭 | Antigravity CLI executing | User's Antigravity access/subscription |
 | 🟣 | Perplexity Sonar web search | User's PERPLEXITY_API_KEY |
 | 🔵 | Claude subagent processing | Included with Claude Code |
 

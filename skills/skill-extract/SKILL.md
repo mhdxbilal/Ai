@@ -84,7 +84,7 @@ When enabled, the extract feature uses multiple AI providers for higher accuracy
 - **Gemini**: Pattern recognition, alternative interpretations, UX insights
 
 **Consensus Mechanism**:
-- Threshold: majority of participating providers must agree
+- Threshold: strict majority (>50%) of participating providers must agree
 - Disagreements logged in `90_evidence/disagreements.md`
 - Confidence scores attached to all outputs
 

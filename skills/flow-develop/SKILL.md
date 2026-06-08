@@ -298,7 +298,7 @@ Read the synthesis file and present:
 - Quality gates results
 - Request user confirmation before implementing
 
-**After user confirms, STEP 6: Implement the solution using Write/Edit tools**
+**After user confirms, STEP 8: Implement the solution using Write/Edit tools**
 
 **Include attribution:**
 ```
@@ -509,7 +509,7 @@ TaskUpdate({taskId: "...", status: "completed"})
 
 If any step fails:
 - **Step 1 (Context)**: Default to Dev Context if ambiguous
-- **Step 2 (Providers)**: If both unavailable, suggest `/octo:setup` and STOP
+- **Step 2 (Providers)**: If all external providers are unavailable, suggest `/octo:setup` and STOP
 - **Step 3 (orchestrate.sh)**: Show bash error, check logs, report to user
 - **Step 4 (Validation)**: If synthesis missing, show orchestrate.sh logs, DO NOT substitute with direct implementation
 

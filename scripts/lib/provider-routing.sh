@@ -72,7 +72,8 @@ build_provider_env() {
         agy*|antigravity)
             # Antigravity CLI relies on its inherited desktop/session environment
             # for prompt-mode behavior and auth context. A stripped env -i shell can
-            # cause it to ignore stdin and act on the workspace instead.
+            # cause it to ignore stdin and act on the workspace instead. This also
+            # preserves TRACEPARENT/TRACESTATE from the parent environment.
             PROVIDER_ENV_ARRAY=()
             ;;
         perplexity*)

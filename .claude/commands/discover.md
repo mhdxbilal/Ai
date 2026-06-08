@@ -34,7 +34,7 @@ cd "${HOME}/.claude-octopus/plugin" && bash scripts/orchestrate.sh probe <user's
 ```
 
 **✗ INCORRECT:**
-```
+```text
 Skill(skill: "octo:discover", ...)  ❌ Wrong here; recursive Skill dispatch can reload this command
 Task(subagent_type: "octo:discover", ...)  ❌ Wrong! This is a command workflow, not an agent type
 ```

@@ -278,7 +278,7 @@ After the command completes, read the result file path that was printed and retu
 )
 ```
 
-**Launch order:** All Gemini agents first, then all Codex agents, then Claude Sonnet, then Perplexity. Within each provider group, launch simultaneously (multiple Agent calls in a single message).
+**Launch order:** Iterate the parsed `FLEET_OUTPUT` order from `build-fleet.sh`. Launch all entries from that runtime fleet in parallel when possible; do not reorder by hardcoded provider names.
 
 **CRITICAL: You are PROHIBITED from:**
 - ❌ Researching directly without calling orchestrate.sh probe-single — single-model research misses perspectives that Codex (implementation depth) and Gemini (ecosystem breadth) bring
@@ -608,7 +608,7 @@ TaskUpdate({taskId: "...", status: "completed"})
 
 If any step fails:
 - **Step 1 (Context)**: Default to Dev Context if ambiguous
-- **Step 2 (Providers)**: If both unavailable, suggest `/octo:setup` and STOP
+- **Step 2 (Providers)**: If all external providers are unavailable, suggest `/octo:setup` and STOP
 - **Step 4 (Agent launch)**: If an agent fails, continue with remaining agents (graceful degradation)
 - **Step 5 (Collection)**: If fewer than 2 results, report error and let user decide
 - **Step 6 (Synthesis)**: If synthesis fails, present raw agent results without synthesis

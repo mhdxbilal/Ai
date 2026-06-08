@@ -80,8 +80,7 @@ Estimated Time: 3-7 minutes
 
 **Validation:**
 - If no external providers are available -> STOP, suggest: `/octo:setup`
-- If ONE unavailable -> Continue with available provider(s)
-- If BOTH available -> Proceed normally
+- If one or more external providers are available -> Continue with available provider(s)
 
 **DO NOT PROCEED TO STEP 3 until banner displayed.**
 
@@ -393,7 +392,7 @@ Providers: Codex | Gemini | Antigravity | Claude
 
 If any step fails:
 - **Step 1 (Questions)**: If user declines all questions, proceed with best-effort assumptions and note them
-- **Step 2 (Providers)**: If both unavailable, suggest `/octo:setup` and STOP
+- **Step 2 (Providers)**: If all external providers are unavailable, suggest `/octo:setup` and STOP
 - **Step 3 (State)**: If state-manager.sh fails, continue without prior state (warn user)
 - **Step 4 (orchestrate.sh)**: Show bash error, check logs, report to user. DO NOT substitute with direct research
 - **Step 5 (Validation)**: If synthesis missing, show orchestrate.sh logs, DO NOT proceed

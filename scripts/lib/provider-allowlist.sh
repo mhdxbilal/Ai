@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -eo pipefail
 # provider-allowlist.sh - Shared provider allowlist helpers.
 #
 # OCTO_ALLOWED_PROVIDERS is a space/comma separated list of provider names.

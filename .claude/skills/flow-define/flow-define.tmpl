@@ -189,7 +189,7 @@ Use AskUserQuestion tool to ask:
 **If user selected "Multi-LLM debate (Claude + available providers)" for approach:**
 Before proceeding with orchestrate.sh, run a Multi-LLM debate to determine the technical approach:
 ```
-/octo:debate --rounds 2 --debate-style collaborative "What is the best technical approach for [feature]? Consider: speed to market, maintainability, performance, and the existing codebase patterns."
+/octo:debate --rounds 3 "What is the best technical approach for [feature]? Consider: speed to market, maintainability, performance, and the existing codebase patterns."
 ```
 Use the debate synthesis to set the approach context for the Define phase.
 
@@ -489,7 +489,7 @@ TaskUpdate({taskId: "...", status: "completed"})
 ### Error Handling
 
 If any step fails:
-- **Step 1 (Providers)**: If both unavailable, suggest `/octo:setup` and STOP
+- **Step 1 (Providers)**: If all external providers are unavailable, suggest `/octo:setup` and STOP
 - **Step 2 (orchestrate.sh)**: Show bash error, check logs, report to user
 - **Step 3 (Validation)**: If synthesis missing, show orchestrate.sh logs, DO NOT substitute with direct analysis
 

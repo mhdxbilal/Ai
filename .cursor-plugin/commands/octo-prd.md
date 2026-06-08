@@ -58,6 +58,11 @@ GEMINI_AVAILABLE="false"
 if command -v gemini >/dev/null 2>&1; then
   GEMINI_AVAILABLE="true"
 fi
+
+AGY_AVAILABLE="false"
+if command -v agy >/dev/null 2>&1; then
+  AGY_AVAILABLE="true"
+fi
 ```
 
 **If multiple providers are available**, dispatch parallel research for richer context:
@@ -72,6 +77,7 @@ fi
 # Parallel research dispatch (if providers available)
 orchestrate.sh prd-research "<feature>" codex &
 orchestrate.sh prd-research "<feature>" gemini &
+orchestrate.sh prd-research "<feature>" agy &
 wait
 ```
 

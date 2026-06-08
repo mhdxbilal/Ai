@@ -56,8 +56,7 @@ test_agy_dispatch_not_gemini_wrapper() {
     test_case "agy dispatch does not use Gemini-specific flags"
 
     local agy_block
-    agy_block="$(sed -n '/agy|agy-research|antigravity)/,/;;/p' "$PROJECT_ROOT/scripts/lib/dispatch.sh")
-$(cat "$PROJECT_ROOT/scripts/helpers/agy-exec.sh")"
+    agy_block="$(sed -n '/agy|agy-research|antigravity)/,/;;/p' "$PROJECT_ROOT/scripts/lib/dispatch.sh")"$'\n'"$(cat "$PROJECT_ROOT/scripts/helpers/agy-exec.sh")"
 
     if [[ "$agy_block" != *"gemini-exec.sh"* ]] && \
        [[ "$agy_block" != *"-o text"* ]] && \

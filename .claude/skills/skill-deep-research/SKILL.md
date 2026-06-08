@@ -125,8 +125,7 @@ Research Parameters:
 
 **Validation:**
 - If no external providers are available → STOP, suggest: `/octo:setup`
-- If ONE unavailable → Continue with available provider(s)
-- If BOTH available → Proceed normally
+- If one or more external providers are available → Continue with available provider(s)
 
 **DO NOT PROCEED TO STEP 3 until banner displayed.**
 
@@ -220,7 +219,7 @@ TaskUpdate({taskId: "...", status: "completed"})
 
 If any step fails:
 - **Step 1 (Questions)**: Cannot proceed without user input
-- **Step 2 (Providers)**: If both unavailable, suggest `/octo:setup` and STOP
+- **Step 2 (Providers)**: If all external providers are unavailable, suggest `/octo:setup` and STOP
 - **Step 3 (orchestrate.sh)**: Show bash error, check logs at `~/.claude-octopus/logs/`, report to user
 - **Step 4 (Validation)**: If synthesis missing, show orchestrate.sh logs, DO NOT substitute with direct research
 

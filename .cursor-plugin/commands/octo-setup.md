@@ -169,6 +169,7 @@ AskUserQuestion({
 ```
 
 Route based on selection:
+- **Use Claude alone (recommended)** → Show "Run /octo:setup anytime to change these settings" and exit
 - **Add or configure a provider** → Continue to the provider install flow below
 - **Configure models** → Invoke `/octo:model-config` (the interactive model config wizard)
 - **Set up RTK** → Jump to the RTK section below
@@ -210,9 +211,13 @@ This ensures the installed CLI (codex, gemini) is immediately available in the c
 For **Antigravity CLI (agy)**, first check whether `agy install` is available:
 
 ```bash
-agy install
-hash -r 2>/dev/null || rehash 2>/dev/null || true
-agy models
+if command -v agy >/dev/null 2>&1; then
+  agy install
+  hash -r 2>/dev/null || rehash 2>/dev/null || true
+  agy models
+else
+  echo "agy CLI not found; install Google Antigravity CLI first, then run: agy --version && agy models"
+fi
 ```
 
 If `agy` is not available yet, direct the user to install Google Antigravity CLI, then verify with `agy --version` and `agy models`. Octopus uses `OCTOPUS_AGY_MODEL` when set; otherwise it defaults to `Claude Sonnet 4.6 (Thinking)` for reliable non-interactive output.
