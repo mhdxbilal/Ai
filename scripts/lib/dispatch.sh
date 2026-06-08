@@ -104,7 +104,7 @@ get_agent_command() {
             fi
             echo "${gemini_env} ${gemini_exec} ${model} ${gemini_flags}"
             ;;
-        codex-review) echo "codex exec --skip-git-repo-check review" ;; # Code review mode (no sandbox support)
+        codex-review) echo "${codex_bin} exec --skip-git-repo-check review" ;; # Code review mode (no sandbox support)
         claude) echo "claude${_BARE_OPT} --print ${claude_perm}" ;;                         # Claude Sonnet 4.6
         claude-sonnet) echo "claude${_BARE_OPT} --print --model sonnet ${claude_perm}" ;;        # Claude Sonnet explicit
         claude-opus)

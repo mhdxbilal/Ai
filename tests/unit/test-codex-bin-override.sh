@@ -55,8 +55,24 @@ test_invalid_codex_bin_falls_back() {
     fi
 }
 
+
+test_codex_review_uses_custom_bin() {
+    test_case "OCTOPUS_CODEX_BIN overrides codex-review binary"
+    export OCTOPUS_CODEX_BIN="/opt/octopus/bin/deepseek-codex"
+    local cmd
+    cmd="$(get_agent_command codex-review)"
+    unset OCTOPUS_CODEX_BIN
+    if [[ "$cmd" == "/opt/octopus/bin/deepseek-codex exec --skip-git-repo-check review" ]]; then
+        test_pass
+    else
+        test_fail "unexpected command: $cmd"
+        return 1
+    fi
+}
+
 test_default_codex_bin
 test_custom_codex_bin
 test_invalid_codex_bin_falls_back
+test_codex_review_uses_custom_bin
 
 test_summary
