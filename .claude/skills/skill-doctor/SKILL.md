@@ -75,7 +75,7 @@ fi
 mkdir -p "${HOME}/.claude-octopus"
 ln -sfn "$OCTO_PLUGIN_ROOT" "${HOME}/.claude-octopus/plugin" 2>/dev/null || true
 export OCTO_PLUGIN_ROOT
-cd "$OCTO_PLUGIN_ROOT" && bash scripts/orchestrate.sh doctor
+bash "$OCTO_PLUGIN_ROOT/scripts/orchestrate.sh" doctor
 ```
 
 This runs all 11 check categories and displays a formatted report.

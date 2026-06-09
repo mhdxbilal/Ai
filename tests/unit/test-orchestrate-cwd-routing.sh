@@ -47,8 +47,9 @@ fi
 # provider name — the exact config shape that produced `--model perplexity`.
 # ═══════════════════════════════════════════════════════════════════════════════
 
-FIXTURE_HOME="$(mktemp -d)"
-trap 'rm -rf "$FIXTURE_HOME"' EXIT
+# Use the framework's shared temp dir (created by test_suite, cleaned by its
+# EXIT trap) instead of a private mktemp + trap.
+FIXTURE_HOME="$TEST_TMP_DIR/fixture-home"
 mkdir -p "$FIXTURE_HOME/.claude-octopus/config"
 cat > "$FIXTURE_HOME/.claude-octopus/config/providers.json" << 'EOF'
 {
@@ -122,10 +123,10 @@ test_colon_route_still_resolves() {
 EOF
     local got
     got="$(resolve_with_fixture codex codex probe researcher)"
-    if [[ -n "$got" && "$got" != "perplexity" ]]; then
+    if [[ "$got" == "gpt-5.4-mini" ]]; then
         test_pass
     else
-        test_fail "colon-form route failed to resolve, got: '$got'"
+        test_fail "colon-form route should resolve to gpt-5.4-mini, got: '$got'"
     fi
 }
 

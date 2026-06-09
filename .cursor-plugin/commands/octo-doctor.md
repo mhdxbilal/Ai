@@ -40,7 +40,7 @@ fi
 mkdir -p "${HOME}/.claude-octopus"
 ln -sfn "$OCTO_PLUGIN_ROOT" "${HOME}/.claude-octopus/plugin" 2>/dev/null || true
 export OCTO_PLUGIN_ROOT
-cd "$OCTO_PLUGIN_ROOT" && bash scripts/orchestrate.sh doctor --verbose
+bash "$OCTO_PLUGIN_ROOT/scripts/orchestrate.sh" doctor --verbose
 ```
 
 ## Step 2: Run Dependency Check
