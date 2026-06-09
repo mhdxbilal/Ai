@@ -155,25 +155,24 @@ fi
 
 original_prompt="Update src/lib/templates/NA02_REQUEST_REPORT.ts and src/lib/legal/legalReferenceCatalog.ts without producing duplicate subject prefixes."
 
-tangle_develop "$original_prompt" >/dev/null
+TANGLE_RC=0
+tangle_develop "$original_prompt" >/dev/null || TANGLE_RC=$?
 
-test_case "overlapping coding scopes fall back to direct execution"
-if [[ "$DIRECT_TASK_ID" == tangle-*-direct ]] && [[ "$PARALLEL_SPAWNED" == "false" ]]; then
+test_case "overlapping coding scopes fail closed"
+if [[ "$TANGLE_RC" -ne 0 ]] && [[ "$PARALLEL_SPAWNED" == "false" ]]; then
     test_pass
 else
-    test_fail "overlapping write scopes were still spawned in parallel"
+    test_fail "overlapping write scopes did not fail closed"
 fi
 
-test_case "direct fallback explains unsafe parallel decomposition"
-if [[ "$DIRECT_PROMPT" == *"parallel decomposition is unsafe"* ]] && \
-   [[ "$DIRECT_PROMPT" == *"overlaps"* ]] && \
-   [[ "$DIRECT_PROMPT" == *"src/lib/templates/NA02_REQUEST_REPORT.ts"* ]]; then
+test_case "overlapping coding scopes do not use direct fallback"
+if [[ -z "$DIRECT_TASK_ID" && -z "$DIRECT_PROMPT" ]]; then
     test_pass
 else
-    test_fail "direct fallback prompt did not preserve the overlap reason and original scope"
+    test_fail "direct fallback was used despite unsafe parallel decomposition"
 fi
 
-test_case "unsafe fallback returns before tangle validation"
+test_case "unsafe decomposition returns before tangle validation"
 if [[ "$VALIDATION_CALLED" == "false" ]]; then
     test_pass
 else
