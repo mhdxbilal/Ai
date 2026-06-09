@@ -330,6 +330,27 @@ test_agy_slash_command_no_stale_three_provider_copy() {
     fi
 }
 
+test_agy_debate_skill_uses_runtime_advisors() {
+    test_case "debate skill uses runtime advisor routing instead of hardcoded Gemini"
+
+    local debate_files=(
+        "$PROJECT_ROOT/.claude/skills/skill-debate/SKILL.md"
+        "$PROJECT_ROOT/skills/skill-debate/SKILL.md"
+    )
+    local stale
+    stale=$(grep -nE 'ADVISORS="gemini,codex"|Consult Gemini|gemini -p|r001_gemini|GEMINI_RESPONSE|Gemini/Codex CLI|Codex/Gemini|codex exec --skip-git-repo-check|when available when available' "${debate_files[@]}" || true)
+
+    if [[ -z "$stale" ]] && \
+       grep -q 'orchestrate.sh" spawn "$advisor"' "$PROJECT_ROOT/.claude/skills/skill-debate/SKILL.md" && \
+       grep -q 'command -v agy' "$PROJECT_ROOT/.claude/skills/skill-debate/SKILL.md" && \
+       grep -q 'orchestrate.sh" spawn "$advisor"' "$PROJECT_ROOT/skills/skill-debate/SKILL.md" && \
+       grep -q 'command -v agy' "$PROJECT_ROOT/skills/skill-debate/SKILL.md"; then
+        test_pass
+    else
+        test_fail "debate skill should dispatch runtime advisors through orchestrate.sh and include agy fallback; stale copy: $stale"
+    fi
+}
+
 test_agy_config_exists
 test_agy_available_agent
 test_agy_dispatch_native_flags
@@ -355,5 +376,6 @@ test_agy_issue_reference
 test_agy_docs_cost_and_marker
 test_agy_slash_command_visibility
 test_agy_slash_command_no_stale_three_provider_copy
+test_agy_debate_skill_uses_runtime_advisors
 
 test_summary
