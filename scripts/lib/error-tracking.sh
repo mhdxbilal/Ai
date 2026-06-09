@@ -3,6 +3,11 @@
 # Functions: record_error, update_task_progress, get_active_form_verb,
 #            write_agent_status, render_agent_summary, record_oversize_event
 
+if ! type probe_result_file_status >/dev/null 2>&1; then
+    _octo_probe_results_lib="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/probe-results.sh"
+    [[ -f "$_octo_probe_results_lib" ]] && source "$_octo_probe_results_lib"
+fi
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # UX ENHANCEMENTS: Feature 1 - Enhanced Spinner Verbs (v7.16.0)
 # Dynamic task progress updates with context-aware verbs
@@ -363,13 +368,20 @@ agent_status_output_files() {
     jq -rs --arg filter "$filter" '
         group_by(.agent)
         | map(.[-1])
-        | map(select(.status == "ok" or .status == "degraded" or .status == "timeout"))
-        | map(.output_file // empty)
-        | map(select(length > 0))
         | .[]
-        | select($filter == "" or contains($filter))
-    ' "$jsonl" 2>/dev/null | while IFS= read -r file; do
-        [[ -f "$file" ]] && printf '%s\n' "$file"
+        | [
+            .status,
+            (.output_file // "")
+          ]
+        | @tsv
+    ' "$jsonl" 2>/dev/null | while IFS=$'\t' read -r status file; do
+        [[ -n "$file" && -f "$file" ]] || continue
+        [[ -z "$filter" || "$file" == *"$filter"* ]] || continue
+        if [[ "$status" == "ok" || "$status" == "degraded" || "$status" == "timeout" ]]; then
+            printf '%s\n' "$file"
+        elif [[ "$status" == "running" ]] && probe_result_file_is_usable "$file"; then
+            printf '%s\n' "$file"
+        fi
     done
 }
 
@@ -385,7 +397,43 @@ render_agent_summary() {
     }
 
     local rows ok degraded failed timeout total
-    rows=$(jq -rs '
+    local reconciled_rows=""
+    while IFS=$'\t' read -r agent status tokens_out seconds reason output_file; do
+        [[ -z "$agent" ]] && continue
+
+        if [[ "$status" == "running" && -n "$output_file" && -f "$output_file" ]]; then
+            local classification probe_status probe_reason output_chars
+            classification="$(probe_result_file_status "$output_file")"
+            probe_status="${classification%%:*}"
+            probe_reason="${classification#*:}"
+
+            case "$probe_status" in
+                success)
+                    status="ok"
+                    reason="reconciled from result file"
+                    ;;
+                degraded)
+                    status="degraded"
+                    reason="${probe_reason:-reconciled partial result}"
+                    ;;
+                timeout)
+                    status="timeout"
+                    reason="${probe_reason:-reconciled timeout result}"
+                    ;;
+                failed)
+                    status="failed"
+                    reason="${probe_reason:-reconciled failed result}"
+                    ;;
+            esac
+
+            output_chars="$(probe_result_output_chars "$output_file")"
+            if [[ "$output_chars" =~ ^[0-9]+$ && "$output_chars" -gt 0 ]]; then
+                tokens_out="$output_chars"
+            fi
+        fi
+
+        reconciled_rows+="${agent}"$'\t'"${status}"$'\t'"${tokens_out}"$'\t'"${seconds}"$'\t'"${reason}"$'\n'
+    done < <(jq -rs '
         group_by(.agent)
         | map(.[-1])
         | .[]
@@ -394,15 +442,17 @@ render_agent_summary() {
             .status,
             ((.tokens_out // 0) | tostring),
             (((.duration_ms // 0) / 1000) | floor | tostring),
-            (.reason // "-")
+            (if ((.reason // "") | length) > 0 then .reason else "-" end),
+            (.output_file // "")
           ]
         | @tsv
     ' "$jsonl" 2>/dev/null) || return 0
+    rows="$reconciled_rows"
 
-    ok=$(jq -rs 'group_by(.agent)|map(.[-1])|map(select(.status=="ok"))|length' "$jsonl" 2>/dev/null || echo 0)
-    degraded=$(jq -rs 'group_by(.agent)|map(.[-1])|map(select(.status=="degraded"))|length' "$jsonl" 2>/dev/null || echo 0)
-    failed=$(jq -rs 'group_by(.agent)|map(.[-1])|map(select(.status=="failed"))|length' "$jsonl" 2>/dev/null || echo 0)
-    timeout=$(jq -rs 'group_by(.agent)|map(.[-1])|map(select(.status=="timeout"))|length' "$jsonl" 2>/dev/null || echo 0)
+    ok=$(awk -F '\t' '$2 == "ok" { n++ } END { print n + 0 }' <<< "$rows")
+    degraded=$(awk -F '\t' '$2 == "degraded" { n++ } END { print n + 0 }' <<< "$rows")
+    failed=$(awk -F '\t' '$2 == "failed" { n++ } END { print n + 0 }' <<< "$rows")
+    timeout=$(awk -F '\t' '$2 == "timeout" { n++ } END { print n + 0 }' <<< "$rows")
     total=$((ok + degraded + failed + timeout))
 
     echo ""

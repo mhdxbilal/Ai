@@ -98,6 +98,7 @@ source "${SCRIPT_DIR}/lib/secure.sh" 2>/dev/null || true
 # Provider detection & version checking (v9.7.7 extraction)
 # Strict source (no silencing) for libs critical to core workflows — surfaces syntax errors
 source "${SCRIPT_DIR}/lib/providers.sh"
+source "${SCRIPT_DIR}/lib/probe-results.sh" 2>/dev/null || true
 source "${SCRIPT_DIR}/lib/preflight.sh" 2>/dev/null || true
 source "${SCRIPT_DIR}/lib/dispatch.sh" 2>/dev/null || true
 source "${SCRIPT_DIR}/lib/progressive.sh" 2>/dev/null || true
@@ -2160,6 +2161,47 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     COMMAND="${1:-help}"
     shift || true
 
+    # Accept common global flags after the command as well as before it.
+    # This keeps dry-runs from executing live providers when users type:
+    #   octopus probe "topic" --dry-run
+    _late_args=()
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -n|--dry-run) DRY_RUN=true; shift ;;
+            --debug) OCTOPUS_DEBUG=true; VERBOSE=true; shift ;;
+            -v|--verbose) VERBOSE=true; shift ;;
+            -Q|--quick) FORCE_TIER="trivial"; shift ;;
+            -P|--premium) FORCE_TIER="premium"; shift ;;
+            --tier)
+                if [[ -n "${2:-}" ]]; then
+                    FORCE_TIER="$2"
+                    shift 2
+                else
+                    _late_args+=("$1")
+                    shift
+                fi
+                ;;
+            --provider)
+                if [[ -n "${2:-}" ]]; then
+                    FORCE_PROVIDER="$2"
+                    shift 2
+                else
+                    _late_args+=("$1")
+                    shift
+                fi
+                ;;
+            --cost-first) FORCE_COST_FIRST=true; shift ;;
+            --quality-first) FORCE_QUALITY_FIRST=true; shift ;;
+            --openrouter-nitro) OPENROUTER_ROUTING_OVERRIDE=":nitro"; shift ;;
+            --openrouter-floor) OPENROUTER_ROUTING_OVERRIDE=":floor"; shift ;;
+            *)
+                _late_args+=("$1")
+                shift
+                ;;
+        esac
+    done
+    set -- "${_late_args[@]}"
+
 # Check for first-run on commands that need setup (skip for help/setup/preflight)
 if [[ "$COMMAND" != "help" && "$COMMAND" != "setup" && "$COMMAND" != "preflight" && "$COMMAND" != "-h" && "$COMMAND" != "--help" ]]; then
     check_first_run || true  # Show hint but don't block
@@ -2405,8 +2447,7 @@ case "$COMMAND" in
         synth_result_count=0
         for result in "$RESULTS_DIR"/*-probe-${synth_task_group}-*.md; do
             [[ -f "$result" ]] || continue
-            fsize=$(wc -c < "$result" 2>/dev/null || echo "0")
-            [[ $fsize -gt 500 ]] && ((synth_result_count++)) || true
+            probe_result_file_is_usable "$result" && ((synth_result_count++)) || true
         done
 
         if [[ $synth_result_count -eq 0 ]]; then

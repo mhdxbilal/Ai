@@ -3,6 +3,11 @@
 # Extracted from orchestrate.sh (v9.5.0+)
 # Sourced by orchestrate.sh — do not run directly.
 
+if ! type probe_result_file_status >/dev/null 2>&1; then
+    _octo_probe_results_lib="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/probe-results.sh"
+    [[ -f "$_octo_probe_results_lib" ]] && source "$_octo_probe_results_lib"
+fi
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # RESULT RANKING (v8.49.0)
 # Ranks result files by quality signals WITHOUT deleting any content.
@@ -102,7 +107,7 @@ rank_results_by_signals() {
         [[ "$result" == *.raw-concat* ]] && continue
         [[ "$result" == *.partial-* ]] && continue
         [[ -n "$filter" && "$result" != *"$filter"* ]] && continue
-        grep -q "Status: FAILED" "$result" 2>/dev/null && continue
+        probe_result_file_is_usable "$result" || continue
         type octo_file_has_provider_rejection >/dev/null 2>&1 && octo_file_has_provider_rejection "$result" && continue
 
         local score
@@ -181,11 +186,8 @@ build_probe_synthesis_context() {
         while IFS= read -r ranked_file; do
             [[ -z "$ranked_file" ]] && continue
             [[ ! -f "$ranked_file" ]] && continue
-            grep -q "Status: FAILED" "$ranked_file" 2>/dev/null && continue
+            probe_result_file_is_usable "$ranked_file" || continue
             type octo_file_has_provider_rejection >/dev/null 2>&1 && octo_file_has_provider_rejection "$ranked_file" && continue
-            local file_size
-            file_size=$(wc -c < "$ranked_file" 2>/dev/null || echo "0")
-            [[ $file_size -le 500 ]] && continue
             local score
             score=$(score_result_file "$ranked_file")
             probe_synthesis_append_excerpt "$ranked_file" "$max_file" "$score"
@@ -262,7 +264,7 @@ aggregate_results() {
             [[ "$result" == *aggregate* ]] && continue
             [[ "$result" == *.raw-concat* ]] && continue
             [[ -n "$filter" && "$result" != *"$filter"* ]] && continue
-            grep -q "Status: FAILED" "$result" 2>/dev/null && continue
+            probe_result_file_is_usable "$result" || continue
             type octo_file_has_provider_rejection >/dev/null 2>&1 && octo_file_has_provider_rejection "$result" && continue
             ranked_files+="$result"$'\n'
         done
@@ -276,7 +278,7 @@ aggregate_results() {
     while IFS= read -r result; do
         [[ -z "$result" ]] && continue
         [[ ! -f "$result" ]] && continue
-        grep -q "Status: FAILED" "$result" 2>/dev/null && continue
+        probe_result_file_is_usable "$result" || continue
         type octo_file_has_provider_rejection >/dev/null 2>&1 && octo_file_has_provider_rejection "$result" && continue
         local score
         score=$(score_result_file "$result")
@@ -383,19 +385,13 @@ synthesize_probe_results() {
     local total_content_size=0
     for result in "$RESULTS_DIR"/*-probe-${task_group}-*.md; do
         [[ -f "$result" ]] || continue
-        grep -q "Status: FAILED" "$result" 2>/dev/null && { log DEBUG "Skipping $result (failed status)"; continue; }
+        probe_result_file_is_usable "$result" || { log DEBUG "Skipping $result (unusable probe output)"; continue; }
         type octo_file_has_provider_rejection >/dev/null 2>&1 && octo_file_has_provider_rejection "$result" && { log DEBUG "Skipping $result (provider rejection)"; continue; }
 
-        # Check if file has meaningful content (>500 bytes of actual content)
         local file_size
         file_size=$(wc -c < "$result" 2>/dev/null || echo "0")
-
-        if [[ $file_size -gt 500 ]]; then
-            ((result_count++)) || true
-            total_content_size=$((total_content_size + file_size))
-        else
-            log DEBUG "Skipping $result (too small: ${file_size}B)"
-        fi
+        ((result_count++)) || true
+        total_content_size=$((total_content_size + file_size))
     done
 
     # v7.19.0 P1.1: Graceful degradation - proceed with 2+ results

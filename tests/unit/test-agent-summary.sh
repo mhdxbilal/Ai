@@ -42,6 +42,35 @@ else
     test_fail "expected provider status table, got: ${summary:-<empty>}"
 fi
 
+test_case "render_agent_summary reconciles stale running row from output file"
+running_file="$WORKSPACE_DIR/results/copilot-running.md"
+cat > "$running_file" <<'EOF'
+# Agent: copilot
+
+## Output
+```
+Provider produced a complete answer after the status ledger was written.
+```
+
+## Status: SUCCESS
+EOF
+write_agent_status "copilot" "running" 100 0 "" 0 "$running_file" "researcher"
+summary="$(render_agent_summary)"
+copilot_row="$(printf '%s\n' "$summary" | grep '^copilot[[:space:]]*|' || true)"
+if [[ "$copilot_row" == *" ok"* && "$copilot_row" != *"running"* ]]; then
+    test_pass
+else
+    test_fail "expected stale running provider to reconcile from result file, got row: ${copilot_row:-<empty>}"
+fi
+
+test_case "agent_status_output_files includes stale running row with usable output"
+files="$(agent_status_output_files)"
+if [[ "$files" == *"copilot-running.md"* ]]; then
+    test_pass
+else
+    test_fail "expected usable stale running output to be listed, got: ${files:-<empty>}"
+fi
+
 test_case "classify_agent_output detects Codex closed stdin tool error"
 codex_empty_output="$WORKSPACE_DIR/results/codex-empty.out"
 codex_stderr="$WORKSPACE_DIR/results/codex-stderr.err"

@@ -616,14 +616,21 @@ Persona-based multi-LLM council for advice, decision support, planning, and gate
 | `--benchmark auto\|on\|off` | BullshitBench snapshot routing signal |
 | `--providers auto\|claude,codex,gemini,opencode,openrouter` | Provider allowlist |
 | `--max-cost <usd>` | Hard USD cost cap |
+| `--simulate` | Explicit single-model simulation mode; never used implicitly |
+| `--single-model` | Alias for `--simulate` |
+| `--research-first` | Gather local/current research evidence before provider fanout |
+| `--corpus-mode off\|append\|require` | Whether findings, synthesis, and plans must be retained in a project corpus |
 | `--dry-run` | Preview roster, providers, quorum, and cost without provider fanout |
 | `--json` | Print `summary.json` to stdout |
 | `--output-dir <path>` | Relocate council artifacts |
 
 **What it does:**
+- Runs through the real Octopus runner by default; single-model simulation must be explicit and is recorded in `summary.json`
 - Selects a persona roster from the existing Octopus persona library
 - Scores seats with role fit, availability, provider diversity, cost, preference, and BullshitBench signal
 - Enforces provider diversity for standard/deep runs when another provider organization is available
+- Writes `research.md` before fanout when `--research-first` is set, injects it into council prompts, and records the artifact in `summary.json`
+- Writes a durable corpus entry when `--corpus-mode append|require` has a detected corpus workspace
 - Estimates cost before dispatch and before each additional phase, aborting before the next phase would exceed `--max-cost`
 - Runs independent advice, cross-critique, and deep-mode revision artifacts
 - Writes `config.json`, `responses/`, `critiques/`, `revisions/`, `synthesis.md`, and `summary.json`

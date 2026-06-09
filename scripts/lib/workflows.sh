@@ -3,6 +3,11 @@
 # Extracted from orchestrate.sh to reduce file size
 # Functions: probe_single_agent, probe_discover, grasp_define, tangle_develop, ink_deliver
 
+if ! type probe_result_file_status >/dev/null 2>&1; then
+    _octo_probe_results_lib="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/probe-results.sh"
+    [[ -f "$_octo_probe_results_lib" ]] && source "$_octo_probe_results_lib"
+fi
+
 # v8.54.0: Single-agent probe for multi-agentic skill dispatch
 # Runs one probe perspective synchronously and writes result to RESULTS_DIR.
 # Called by Claude's Agent tool (one per perspective) instead of probe_discover().
@@ -558,7 +563,10 @@ ${_blind_spot_checklist}"
     # Wait for all to complete with progress
     # v7.19.0 P1.2: Rich progress display
     local start_time=$(date +%s)
+    OCTO_PROGRESS_AGENT_TYPES=("${probe_agents[@]}")
+    OCTO_PROGRESS_AGENT_NAMES=("${pane_titles[@]}")
     display_rich_progress "$task_group" "${#pids[@]}" "$start_time" "${pids[@]}"
+    unset OCTO_PROGRESS_AGENT_TYPES OCTO_PROGRESS_AGENT_NAMES
 
     # Cleanup tmux if enabled
     if [[ "$TMUX_MODE" == "true" ]]; then
@@ -596,30 +604,23 @@ ${_blind_spot_checklist}"
             # Capitalize first letter of agent name properly
             local agent_display="$(_ucfirst "$agent")"
 
-            # Categorize based on content and status markers
-            if grep -q "Status: SUCCESS" "$result_file"; then
+            local classification status reason
+            classification="$(probe_result_file_status "$result_file")"
+            status="${classification%%:*}"
+            reason="${classification#*:}"
+
+            if [[ "$status" == "success" ]]; then
                 echo -e " ${GREEN}✓${NC} $agent_display probe $i: completed ($(numfmt --to=iec-i --suffix=B $file_size 2>/dev/null || echo "${file_size}B"))"
                 ((success_count++)) || true
-            elif grep -q "Status: TIMEOUT" "$result_file"; then
+            elif [[ "$status" == "timeout" ]]; then
                 echo -e " ${YELLOW}⏳${NC} $agent_display probe $i: timeout with partial results ($(numfmt --to=iec-i --suffix=B $file_size 2>/dev/null || echo "${file_size}B"))"
                 ((timeout_count++)) || true
-            elif grep -q "Status: FAILED" "$result_file"; then
-                if [[ $file_size -gt 1024 ]]; then
-                    echo -e " ${YELLOW}⚠${NC}  $agent_display probe $i: failed but has output ($(numfmt --to=iec-i --suffix=B $file_size 2>/dev/null || echo "${file_size}B"))"
-                    ((timeout_count++)) || true  # Count as partial success
-                else
-                    echo -e " ${RED}✗${NC} $agent_display probe $i: failed ($(numfmt --to=iec-i --suffix=B $file_size 2>/dev/null || echo "${file_size}B"))"
-                    ((failure_count++)) || true
-                fi
+            elif [[ "$status" == "degraded" ]]; then
+                echo -e " ${YELLOW}⚠${NC} $agent_display probe $i: partial result (${reason:-degraded}; $(numfmt --to=iec-i --suffix=B $file_size 2>/dev/null || echo "${file_size}B"))"
+                ((timeout_count++)) || true
             else
-                # No clear status marker - check file size
-                if [[ $file_size -gt 1024 ]]; then
-                    echo -e " ${YELLOW}?${NC} $agent_display probe $i: unknown status but has content ($(numfmt --to=iec-i --suffix=B $file_size 2>/dev/null || echo "${file_size}B"))"
-                    ((timeout_count++)) || true  # Count as partial success
-                else
-                    echo -e " ${RED}✗${NC} $agent_display probe $i: empty or missing ($(numfmt --to=iec-i --suffix=B $file_size 2>/dev/null || echo "${file_size}B"))"
-                    ((failure_count++)) || true
-                fi
+                echo -e " ${RED}✗${NC} $agent_display probe $i: unusable (${reason:-failed}; $(numfmt --to=iec-i --suffix=B $file_size 2>/dev/null || echo "${file_size}B"))"
+                ((failure_count++)) || true
             fi
         else
             local agent_display="$(_ucfirst "$agent")"
@@ -639,7 +640,7 @@ ${_blind_spot_checklist}"
             local task_id="probe-${task_group}-${i}"
             local agent="${probe_agents[$i]}"
             local result_file="${RESULTS_DIR}/${agent}-${task_id}.md"
-            if [[ ! -f "$result_file" ]] || grep -q "Status: FAILED" "$result_file" 2>/dev/null; then
+            if [[ ! -f "$result_file" ]] || ! probe_result_file_is_usable "$result_file"; then
                 failed_providers="${failed_providers:+$failed_providers, }${agent}"
             fi
         done

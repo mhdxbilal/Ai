@@ -318,6 +318,16 @@ const WORKFLOW_DEFS: WorkflowDef[] = [
         Type.String({ description: "auto or comma-separated provider list: claude,codex,gemini,opencode,openrouter" })
       ),
       max_cost: Type.Optional(Type.String({ description: "USD decimal budget cap, for example 2.00" })),
+      simulate: Type.Optional(Type.Boolean({ description: "Explicit single-model simulation mode; never used implicitly" })),
+      single_model: Type.Optional(Type.Boolean({ description: "Alias for explicit single-model simulation mode" })),
+      research_first: Type.Optional(Type.Boolean({ description: "Gather research evidence before council fanout" })),
+      corpus_mode: Type.Optional(
+        Type.Union([
+          Type.Literal("off"),
+          Type.Literal("append"),
+          Type.Literal("require"),
+        ], { description: "Whether findings, synthesis, and plans must be retained in a project corpus" })
+      ),
       dry_run: Type.Optional(Type.Boolean({ description: "Preview council selection and cost without dispatching providers" })),
       json: Type.Optional(Type.Boolean({ description: "Print summary.json to stdout" })),
       output_dir: Type.Optional(Type.String({ description: "Parent directory for council run artifacts" })),
@@ -339,6 +349,10 @@ const WORKFLOW_DEFS: WorkflowDef[] = [
       add("--benchmark", params.benchmark);
       add("--providers", params.providers);
       add("--max-cost", params.max_cost);
+      add("--corpus-mode", params.corpus_mode);
+      if (params.simulate === true) postFlags.push("--simulate");
+      if (params.single_model === true) postFlags.push("--single-model");
+      if (params.research_first === true) postFlags.push("--research-first");
       add("--output-dir", params.output_dir);
       if (params.dry_run === true) postFlags.push("--dry-run");
       if (params.json === true) postFlags.push("--json");

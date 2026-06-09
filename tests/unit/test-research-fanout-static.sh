@@ -16,6 +16,13 @@ else
     test_fail "expected breadth parsing in research command"
 fi
 
+test_case "research command routes to dedicated research skill"
+if [[ "$research_cmd" == *'Skill(skill: "octopus-research"'* && "$research_cmd" != *'Skill(skill: "octo:discover"'* ]]; then
+    test_pass
+else
+    test_fail "expected /octo:research to invoke octopus-research, not octo:discover"
+fi
+
 test_case "discover skill requires dynamic multi-provider fleet"
 discover_skill="$(<"$(resolve_claude_skill_path "flow-discover")")"
 if [[ "$discover_skill" == *"build-fleet.sh"* && "$discover_skill" == *"Codex, Gemini, Copilot, Qwen, OpenCode"* ]]; then
@@ -29,6 +36,17 @@ if [[ "$discover_skill" == *"orchestrate.sh\" agent-summary"* && "$discover_skil
     test_pass
 else
     test_fail "expected agent-summary gate before synthesis"
+fi
+
+test_case "probe progress display receives actual provider roster"
+workflows_lib="$(<"$PROJECT_ROOT/scripts/lib/workflows.sh")"
+session_lib="$(<"$PROJECT_ROOT/scripts/lib/session.sh")"
+if [[ "$workflows_lib" == *"OCTO_PROGRESS_AGENT_TYPES"* && \
+      "$session_lib" == *"OCTO_PROGRESS_AGENT_TYPES"* && \
+      "$session_lib" == *"perplexity*)"* ]]; then
+    test_pass
+else
+    test_fail "expected rich progress to use dynamic probe provider metadata"
 fi
 
 test_summary

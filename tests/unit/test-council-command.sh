@@ -407,6 +407,168 @@ test_council_skill_documents_gates() {
     fi
 }
 
+test_council_command_requires_real_runner_by_default() {
+    test_case "Council command requires real runner by default"
+
+    local command_file="$PROJECT_ROOT/.claude/commands/council.md"
+    local skill_file="$PROJECT_ROOT/skills/skill-council/SKILL.md"
+
+    if grep -q 'scripts/orchestrate.sh" council' "$command_file" &&
+       grep -q "Do not simulate" "$command_file" &&
+       grep -q "single-model simulation" "$skill_file" &&
+       grep -q "must be explicitly requested" "$skill_file"; then
+        test_pass
+    else
+        test_fail "council command/skill does not force real runner by default"
+        return 1
+    fi
+}
+
+test_council_skill_requires_interactive_choices_for_clarification() {
+    test_case "Council skill requires interactive choices for clarification"
+
+    local command_file="$PROJECT_ROOT/.claude/commands/council.md"
+    local cursor_command_file="$PROJECT_ROOT/.cursor-plugin/commands/octo-council.md"
+    local skill_file="$PROJECT_ROOT/skills/skill-council/SKILL.md"
+
+    if grep -q "AskUserQuestion" "$command_file" &&
+       grep -q "AskUserQuestion" "$cursor_command_file" &&
+       grep -q "AskUserQuestion" "$skill_file" &&
+       grep -q "before running the council runner" "$skill_file" &&
+       grep -q "Interactive Choice Handling" "$skill_file" &&
+       grep -q "2-4 mutually exclusive choices" "$skill_file" &&
+       grep -q "Do not end" "$skill_file"; then
+        test_pass
+    else
+        test_fail "skill-council missing interactive choice guidance"
+        return 1
+    fi
+}
+
+test_council_help_shows_simulation_research_and_corpus_flags() {
+    test_case "Council help shows simulation, research, and corpus flags"
+
+    local output
+    output="$("$PROJECT_ROOT/scripts/orchestrate.sh" council --help 2>&1)"
+
+    if echo "$output" | grep -q -- "--simulate" &&
+       echo "$output" | grep -q -- "--single-model" &&
+       echo "$output" | grep -q -- "--research-first" &&
+       echo "$output" | grep -q -- "--corpus-mode"; then
+        test_pass
+    else
+        test_fail "help output missing simulation/research/corpus flags"
+        return 1
+    fi
+}
+
+test_council_summary_records_execution_and_corpus_modes() {
+    test_case "Council summary records execution and corpus modes"
+    load_council_lib || return 1
+
+    local tmp_dir
+    tmp_dir="$(mktemp -d "$TEST_TMP_DIR/council-mode.XXXXXX")"
+
+    council_run --dry-run --simulate --research-first --corpus-mode append --output-dir "$tmp_dir" "Review platform options"
+
+    local summary
+    summary="$(find "$tmp_dir" -name summary.json -type f | head -1)"
+    [[ -n "$summary" ]] || { test_fail "summary.json not written"; return 1; }
+
+    if jq -e '
+      .execution.mode == "single-model-simulation" and
+      .execution.real_runner_required == true and
+      .execution.simulation_explicit == true and
+      .research.first == true and
+      .corpus.mode == "append"
+    ' "$summary" >/dev/null; then
+        test_pass
+    else
+        test_fail "execution/research/corpus summary metadata mismatch"
+        return 1
+    fi
+}
+
+test_council_corpus_require_rejects_missing_workspace() {
+    test_case "Council corpus require rejects missing workspace"
+    load_council_lib || return 1
+
+    local out_file="$TEST_TMP_DIR/council-corpus.out"
+    set +e
+    council_parse_args --corpus-mode require "Review platform options" >"$out_file" 2>&1
+    local status=$?
+    set -e
+
+    [[ $status -eq 2 ]] || { test_fail "expected exit code 2, got $status"; return 1; }
+    grep -q "corpus workspace" "$out_file" || { test_fail "missing corpus usage hint"; return 1; }
+    test_pass
+}
+
+test_council_research_first_writes_artifact_and_prompt_context() {
+    test_case "Council research-first writes artifact and injects prompt context"
+    load_council_lib || return 1
+
+    local tmp_dir corpus_root
+    tmp_dir="$(mktemp -d "$TEST_TMP_DIR/council-research.XXXXXX")"
+    corpus_root="$tmp_dir/corpus"
+    mkdir -p "$corpus_root/03_knowledge_base"
+    printf '# Existing Decision\n\nUse boring, observable infrastructure.\n' > "$corpus_root/03_knowledge_base/decision.md"
+
+    OCTOPUS_COUNCIL_FIXTURE=full-success \
+    OCTOPUS_COUNCIL_CORPUS_ROOT="$corpus_root" \
+    OCTOPUS_COUNCIL_PROVIDER_FIXTURE='claude:available,codex:available,gemini:available' \
+        council_run --research-first --depth quick --output-dir "$tmp_dir" "Review queue options"
+
+    local run_dir summary research prompt
+    run_dir="$(find "$tmp_dir" -mindepth 1 -maxdepth 1 -type d ! -name corpus | head -1)"
+    summary="$run_dir/summary.json"
+    research="$run_dir/research.md"
+    [[ -f "$research" ]] || { test_fail "research.md not written"; return 1; }
+
+    COUNCIL_RUN_DIR="$run_dir"
+    prompt="$(council_prompt_for_member "backend-architect" "independent-advice")"
+
+    if grep -q "Existing Decision" "$research" &&
+       grep -q "COUNCIL_RESEARCH_CONTEXT" <<< "$prompt" &&
+       jq -e '.research.first == true and .research.artifact == "research.md"' "$summary" >/dev/null; then
+        test_pass
+    else
+        test_fail "research artifact or prompt context missing"
+        return 1
+    fi
+}
+
+test_council_corpus_append_writes_durable_entry() {
+    test_case "Council corpus append writes durable entry"
+    load_council_lib || return 1
+
+    local tmp_dir corpus_root
+    tmp_dir="$(mktemp -d "$TEST_TMP_DIR/council-corpus-append.XXXXXX")"
+    corpus_root="$tmp_dir/corpus"
+    mkdir -p "$corpus_root/03_knowledge_base"
+
+    OCTOPUS_COUNCIL_FIXTURE=full-success \
+    OCTOPUS_COUNCIL_CORPUS_ROOT="$corpus_root" \
+    OCTOPUS_COUNCIL_PROVIDER_FIXTURE='claude:available,codex:available,gemini:available' \
+        council_run --research-first --corpus-mode append --goal implement --implement plan-only --depth quick --output-dir "$tmp_dir" "Plan auth cleanup"
+
+    local summary entry
+    summary="$(find "$tmp_dir" -name summary.json -type f | head -1)"
+    [[ -n "$summary" ]] || { test_fail "summary.json not written"; return 1; }
+    entry="$(jq -r '.corpus.entry // empty' "$summary")"
+
+    if [[ -n "$entry" ]] &&
+       [[ -f "$entry" ]] &&
+       grep -q "Council Synthesis" "$entry" &&
+       grep -q "Implementation Plan" "$entry" &&
+       jq -e '.corpus.mode == "append" and (.corpus.entry | type == "string")' "$summary" >/dev/null; then
+        test_pass
+    else
+        test_fail "corpus entry missing expected retained artifacts"
+        return 1
+    fi
+}
+
 test_council_pass_parser_accepts_variants() {
     test_case "Council PASS parser accepts variants"
     load_council_lib || return 1
@@ -962,6 +1124,13 @@ test_council_role_fit_uses_agent_capability_tags
 test_council_benchmark_freshness_decays
 test_council_refresh_benchmarks_fetches_upstream_sources
 test_council_skill_documents_gates
+test_council_command_requires_real_runner_by_default
+test_council_skill_requires_interactive_choices_for_clarification
+test_council_help_shows_simulation_research_and_corpus_flags
+test_council_summary_records_execution_and_corpus_modes
+test_council_corpus_require_rejects_missing_workspace
+test_council_research_first_writes_artifact_and_prompt_context
+test_council_corpus_append_writes_durable_entry
 test_council_pass_parser_accepts_variants
 test_council_fixture_run_writes_phase_artifacts
 test_council_synthesis_is_chair_generated
@@ -982,4 +1151,71 @@ test_council_scans_artifact_critical_veto
 test_council_structured_veto_requires_veto_role
 test_council_veto_scan_ignores_discussed_token
 test_council_dispatch_strips_blocked_env_but_sets_readonly
+
+test_council_host_native_detection() {
+    test_case "council_detect_providers marks host provider as host-native (issue #444)"
+    load_council_lib || return 1
+
+    OCTOPUS_HOST="codex" \
+    COUNCIL_PROVIDERS="claude,codex,gemini" \
+        council_detect_providers
+
+    local codex_status claude_status
+    codex_status="$(jq -r '.codex // "missing"' <<< "$COUNCIL_PROVIDER_STATUS_JSON")"
+    claude_status="$(jq -r '.claude // "missing"' <<< "$COUNCIL_PROVIDER_STATUS_JSON")"
+
+    if [[ "$codex_status" == "host-native" ]]; then
+        # codex must still be considered available for roster formation
+        if council_provider_is_available "codex"; then
+            test_pass
+        else
+            test_fail "host-native provider should still be considered available for roster"
+            return 1
+        fi
+    else
+        test_fail "expected codex status 'host-native', got '$codex_status'"
+        return 1
+    fi
+}
+
+test_council_live_response_host_native_skips_subprocess() {
+    test_case "council_live_response emits in-context note for host-native provider (issue #444)"
+    load_council_lib || return 1
+
+    COUNCIL_PROVIDER_STATUS_JSON='{"codex":"host-native"}'
+    local out
+    out="$(council_live_response "codex" "code-reviewer" "dummy prompt" "independent-advice")"
+    local rc=$?
+
+    if [[ $rc -eq 0 && "$out" == *"host agent"* ]]; then
+        test_pass
+    else
+        test_fail "expected rc=0 and host-agent note in output; rc=$rc output=$out"
+        return 1
+    fi
+}
+
+test_council_live_response_host_native_fails_for_synthesis() {
+    test_case "council_live_response returns 1 for host-native chair-synthesis (issue #444 follow-up)"
+    load_council_lib || return 1
+
+    COUNCIL_PROVIDER_STATUS_JSON='{"codex":"host-native"}'
+    local rc=0
+    if council_live_response "codex" "strategy-analyst" "dummy prompt" "chair-synthesis" >/dev/null; then
+        rc=0
+    else
+        rc=$?
+    fi
+
+    if [[ $rc -ne 0 ]]; then
+        test_pass
+    else
+        test_fail "expected rc!=0 for host-native chair-synthesis, got rc=0"
+        return 1
+    fi
+}
+
+test_council_host_native_detection
+test_council_live_response_host_native_skips_subprocess
+test_council_live_response_host_native_fails_for_synthesis
 test_summary
