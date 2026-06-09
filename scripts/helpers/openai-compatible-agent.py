@@ -79,7 +79,15 @@ def main() -> int:
     for turn in range(1, args.max_turns + 1):
         d = api_call(base_url, key, model, cfg.get("headers", {}), messages)
         ch = d.get("choices", [{}])[0]; msg = ch.get("message", {})
-        finish = ch.get("finish_reason"); content = msg.get("content") or ""; calls = msg.get("tool_calls") or []
+        finish = ch.get("finish_reason")
+        raw_content = msg.get("content")
+        if isinstance(raw_content, str):
+            content = raw_content
+        elif raw_content is None:
+            content = ""
+        else:
+            content = json.dumps(raw_content, ensure_ascii=False)
+        calls = msg.get("tool_calls") or []
         print(f"turn={turn} finish={finish} content_len={len(content)} tool_calls={len(calls)}", file=sys.stderr)
         if calls:
             messages.append({"role":"assistant", "content": content, "tool_calls": calls})

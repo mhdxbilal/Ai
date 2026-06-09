@@ -306,7 +306,8 @@ is_agent_available_v2() {
             [[ "$PROVIDER_OPENROUTER_ENABLED" == "true" && "$PROVIDER_OPENROUTER_API_KEY_SET" == "true" ]]
             ;;
         openai-compatible-agent*)
-            [[ -n "${OPENAI_COMPAT_BASE_URL:-}" && ( -n "${OPENAI_COMPAT_API_KEY:-}" || -n "${OPENAI_COMPAT_API_KEY_ENV:-}" ) ]]
+            local compat_key_env="${OPENAI_COMPAT_API_KEY_ENV:-OPENAI_API_KEY}"
+            [[ -n "${OPENAI_COMPAT_BASE_URL:-}" && ( -n "${OPENAI_COMPAT_API_KEY:-}" || -n "${!compat_key_env:-}" ) ]]
             ;;
         perplexity|perplexity-fast)
             [[ -n "${PERPLEXITY_API_KEY:-}" ]]

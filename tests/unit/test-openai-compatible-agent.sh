@@ -20,6 +20,7 @@ log() { :; }
 migrate_provider_config() { :; }
 validate_model_allowed() { return 0; }
 opus_default_model() { echo "claude-opus-4.8"; }
+PROVIDER_CODEX_INSTALLED="false"
 
 if bash -n "$DISPATCH" "$MODEL_RESOLVER" && python3 -m py_compile "$HELPER"; then
     pass "agent scripts have valid syntax"
@@ -41,6 +42,13 @@ if [[ "$model" == "vendor/model-pro" ]]; then
     test_pass
 else
     test_fail "expected vendor/model-pro, got ${model:-<empty>}"
+fi
+
+test_case "openai-compatible-agent is available with default OPENAI_API_KEY"
+if OPENAI_COMPAT_BASE_URL="https://example.invalid/v1" OPENAI_API_KEY="test-key" is_agent_available_v2 openai-compatible-agent; then
+    test_pass
+else
+    test_fail "expected default OPENAI_API_KEY configuration to be available"
 fi
 
 test_case "openai-compatible-agent dispatch uses generic helper and cwd"
