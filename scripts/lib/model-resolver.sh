@@ -209,6 +209,9 @@ resolve_octopus_model() {
             openrouter-glm*)  resolved_model="z-ai/glm-5" ;;
             openrouter-kimi*) resolved_model="moonshotai/kimi-k2.5" ;;
             openrouter-deepseek*) resolved_model="deepseek/deepseek-r1-0528" ;;
+            openrouter-agent*) resolved_model="${OCTOPUS_OPENROUTER_AGENT_MODEL:-minimax/minimax-m3}" ;;
+            pioneer-agent*) resolved_model="${OCTOPUS_PIONEER_AGENT_MODEL:-MiniMaxAI/MiniMax-M3}" ;;
+            openai-compatible-agent*) resolved_model="${OPENAI_COMPAT_MODEL:-minimax/minimax-m3}" ;;
             ollama*)         resolved_model="llama3.3" ;;
             copilot*)        resolved_model="claude-sonnet-4.5" ;; # Copilot default; actual model selected by copilot CLI
             qwen*)           resolved_model="qwen3-coder" ;;
@@ -286,6 +289,12 @@ is_agent_available_v2() {
             ;;
         openrouter|openrouter-*)
             [[ "$PROVIDER_OPENROUTER_ENABLED" == "true" && "$PROVIDER_OPENROUTER_API_KEY_SET" == "true" ]]
+            ;;
+        pioneer-agent*)
+            [[ -n "${PIONEER_API_KEY:-}" ]]
+            ;;
+        openai-compatible-agent*)
+            [[ -n "${OPENAI_COMPAT_BASE_URL:-}" && ( -n "${OPENAI_COMPAT_API_KEY:-}" || -n "${OPENAI_COMPAT_API_KEY_ENV:-}" ) ]]
             ;;
         perplexity|perplexity-fast)
             [[ -n "${PERPLEXITY_API_KEY:-}" ]]

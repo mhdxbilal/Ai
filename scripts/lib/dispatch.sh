@@ -113,6 +113,14 @@ get_agent_command() {
         openrouter-glm5) echo "openrouter_execute_model z-ai/glm-5" ;;           # v8.11.0: GLM-5 via OpenRouter
         openrouter-kimi) echo "openrouter_execute_model moonshotai/kimi-k2.5" ;; # v8.11.0: Kimi K2.5 via OpenRouter
         openrouter-deepseek) echo "openrouter_execute_model deepseek/deepseek-r1-0528" ;; # v8.11.0: DeepSeek R1 via OpenRouter
+        openrouter-agent|pioneer-agent|openai-compatible-agent)  # OpenAI-compatible tool-loop agent
+            model=$(get_agent_model "$agent_type" "$phase" "$role")
+            case "$agent_type" in
+                openrouter-agent) echo "${PLUGIN_DIR}/scripts/helpers/openai-compatible-agent.py --provider openrouter --model ${model} --cwd ${PWD}" ;;
+                pioneer-agent) echo "${PLUGIN_DIR}/scripts/helpers/openai-compatible-agent.py --provider pioneer --model ${model} --cwd ${PWD}" ;;
+                openai-compatible-agent) echo "${PLUGIN_DIR}/scripts/helpers/openai-compatible-agent.py --provider openrouter --model ${model} --cwd ${PWD}" ;;
+            esac
+            ;;
         perplexity|perplexity-fast)  # v8.24.0: Perplexity Sonar — web-grounded research (Issue #22)
             model=$(get_agent_model "$agent_type" "$phase" "$role")
             echo "perplexity_execute $model"
@@ -362,6 +370,8 @@ get_agent_model() {
         gemini*)     provider="gemini" ;;
         claude*)     provider="claude" ;;
         openrouter*) provider="openrouter" ;;
+        pioneer-agent*) provider="pioneer-agent" ;;
+        openai-compatible-agent*) provider="openai-compatible-agent" ;;
         perplexity*) provider="perplexity" ;;
         qwen*)       provider="qwen" ;;
         cursor-agent*) provider="cursor-agent" ;;
@@ -396,6 +406,8 @@ validate_model_allowed() {
         gemini)     allowlist_var="OCTOPUS_GEMINI_ALLOWED_MODELS" ;;
         claude)     allowlist_var="OCTOPUS_CLAUDE_ALLOWED_MODELS" ;;
         openrouter) allowlist_var="OCTOPUS_OPENROUTER_ALLOWED_MODELS" ;;
+        pioneer-agent) allowlist_var="OCTOPUS_PIONEER_ALLOWED_MODELS" ;;
+        openai-compatible-agent) allowlist_var="OPENAI_COMPAT_ALLOWED_MODELS" ;;
         perplexity) allowlist_var="OCTOPUS_PERPLEXITY_ALLOWED_MODELS" ;;
         qwen)       allowlist_var="OCTOPUS_QWEN_ALLOWED_MODELS" ;;
         cursor-agent) allowlist_var="OCTOPUS_CURSOR_AGENT_ALLOWED_MODELS" ;;
