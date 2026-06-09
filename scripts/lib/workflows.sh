@@ -872,7 +872,10 @@ tangle_resolve_repo_root() {
     if [[ -n "${PROJECT_ROOT:-}" ]]; then
         if [[ -d "$PROJECT_ROOT" ]]; then
             resolved_root=$(git -C "$PROJECT_ROOT" rev-parse --show-toplevel 2>/dev/null || true)
-            [[ -n "$resolved_root" ]] || return 1
+            if [[ -z "$resolved_root" ]]; then
+                printf '%s\n' "$PROJECT_ROOT"
+                return 0
+            fi
             printf '%s\n' "$resolved_root"
             return 0
         fi
@@ -893,6 +896,7 @@ tangle_resolve_repo_context_files() {
 
     local repo_root
     repo_root=$(tangle_resolve_repo_root) || return 0
+    git -C "$repo_root" rev-parse --show-toplevel >/dev/null 2>&1 || return 0
 
     local files=()
     local token full basename
