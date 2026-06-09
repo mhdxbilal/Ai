@@ -48,7 +48,10 @@ check_explicit_file_coverage() {
 snapshot_tangle_worktree_paths() {
     local repo_root="${PROJECT_ROOT:-$(pwd)}"
     [[ -d "$repo_root" ]] || repo_root="$(pwd)"
-    git -C "$repo_root" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 0
+    if ! git -C "$repo_root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        repo_root="$(pwd)"
+        git -C "$repo_root" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 0
+    fi
 
     {
         git -C "$repo_root" diff --name-only 2>/dev/null || true
