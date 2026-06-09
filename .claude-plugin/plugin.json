@@ -1,6 +1,6 @@
 {
   "name": "octo",
-  "version": "9.42.3",
+  "version": "9.42.4",
   "description": "v9.42.3 \u2014 Patch release for cursor-agent smoke checks in untrusted workspaces. Run /octo:setup.",
   "author": {
     "name": "nyldn",

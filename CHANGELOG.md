@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [9.42.4] - 2026-06-09
+
+### Fixed
+
+- Remove stale `/octo:doctor` slash command references from `skill-doctor/SKILL.md`; the command was intentionally removed in v9.41.0 to preserve Claude Code's native `/doctor` (#437, closes #436).
+- Skip Codex subprocess when Codex CLI is the host runtime to avoid recursive invocation (#445).
+
 ## [9.42.3] - 2026-06-03
 
 ### Changed
