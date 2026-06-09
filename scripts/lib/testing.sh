@@ -46,13 +46,25 @@ check_explicit_file_coverage() {
 }
 
 snapshot_tangle_worktree_paths() {
-    git rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 0
+    local repo_root=""
+
+    if [[ -n "${PROJECT_ROOT:-}" ]]; then
+        if [[ -d "$PROJECT_ROOT" ]]; then
+            repo_root=$(git -C "$PROJECT_ROOT" rev-parse --show-toplevel 2>/dev/null || true)
+            [[ -n "$repo_root" ]] || return 0
+        else
+            repo_root=$(git -C "$(pwd)" rev-parse --show-toplevel 2>/dev/null || true)
+        fi
+    else
+        repo_root=$(git -C "$(pwd)" rev-parse --show-toplevel 2>/dev/null || true)
+    fi
+    [[ -n "$repo_root" ]] || return 0
 
     {
-        git diff --name-only 2>/dev/null || true
-        git diff --cached --name-only 2>/dev/null || true
-        git ls-files --others --exclude-standard 2>/dev/null || true
-    } | sed '/^$/d' | sort -u
+        git -C "$repo_root" diff --name-only 2>/dev/null || true
+        git -C "$repo_root" diff --cached --name-only 2>/dev/null || true
+        git -C "$repo_root" ls-files --others --exclude-standard 2>/dev/null || true
+    } | sed /^$/d | sort -u
 }
 
 tangle_prompt_requires_worktree_changes() {

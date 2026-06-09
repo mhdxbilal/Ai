@@ -800,6 +800,9 @@ build_tangle_subtask_prompt() {
         return 64
     fi
 
+    local repo_context
+    repo_context=$(tangle_build_repo_context_block "$assigned_subtask")
+
     cat <<EOF
 Original task context:
 ${original_task}
@@ -807,11 +810,13 @@ ${original_task}
 Assigned subtask:
 ${assigned_subtask}
 
+${repo_context}
+
 Execution instructions:
 - Treat the original task as authoritative for requirements, explicit file targets, acceptance criteria, and forbidden changes.
 - Complete the assigned subtask without dropping original constraints that apply to it.
 - For [CODING] work, edit the repository files directly in the current worktree. Do not only describe a plan or paste code snippets.
-- For [CODING] work, treat file paths/directories named in the assigned subtask as your exclusive write scope. Do not edit files owned by another subtask; report a blocker if the required change crosses scopes.
+- For [CODING] work, treat file paths/directories named in the assigned subtask as approximate exclusive write scope intent. Use the resolved repository context files above as the concrete targets. Do not edit files clearly owned by another subtask; report a blocker if the required change crosses scopes.
 - If the subtask creates a new exported component, command, event type, route, hook, or helper, wire it into at least one production call site unless the original task explicitly asks for an isolated artifact.
 - Tests alone are not integration evidence. User-facing features must be reachable from the relevant user flow or the subtask must report a blocker.
 - In the final output, include "## Worktree Changes", "## Integration Evidence", and "## Verification" sections.
@@ -824,6 +829,7 @@ tangle_extract_write_scopes() {
     local files_text
 
     files_text=$(printf '%s\n' "$text" | sed -nE 's/.*Files:[[:space:]]*//p' | head -n 1)
+    files_text=$(printf '%s\n' "$files_text" | sed -E 's/[[:space:]]+[—-][[:space:]]+Task:.*$//; s/[[:space:]]+Task:.*$//')
     [[ -n "$files_text" ]] || return 0
 
     printf '%s\n' "$files_text" \
@@ -860,6 +866,153 @@ tangle_scopes_overlap() {
     return 1
 }
 
+tangle_resolve_repo_root() {
+    local repo_root
+    local resolved_root
+
+    if [[ -n "${PROJECT_ROOT:-}" ]]; then
+        if [[ -d "$PROJECT_ROOT" ]]; then
+            resolved_root=$(git -C "$PROJECT_ROOT" rev-parse --show-toplevel 2>/dev/null || true)
+            if [[ -z "$resolved_root" ]]; then
+                printf '%s\n' "$PROJECT_ROOT"
+                return 0
+            fi
+            printf '%s\n' "$resolved_root"
+            return 0
+        fi
+        repo_root="$(pwd)"
+    else
+        repo_root="$(pwd)"
+    fi
+
+    resolved_root=$(git -C "$repo_root" rev-parse --show-toplevel 2>/dev/null || true)
+    [[ -n "$resolved_root" ]] || return 1
+    printf '%s\n' "$resolved_root"
+}
+
+tangle_resolve_repo_context_files() {
+    local text="$1"
+    local max_files="${OCTOPUS_TANGLE_CONTEXT_MAX_FILES:-16}"
+    [[ "$max_files" =~ ^[0-9]+$ ]] || max_files=16
+
+    local repo_root
+    repo_root=$(tangle_resolve_repo_root) || return 0
+    git -C "$repo_root" rev-parse --show-toplevel >/dev/null 2>&1 || return 0
+
+    local files=()
+    local token full basename
+
+    # Keep concrete existing files explicitly named by the decomposition.
+    while IFS= read -r token; do
+        [[ -z "$token" ]] && continue
+        token="${token#./}"
+        if [[ -f "$repo_root/$token" ]]; then
+            files+=("$token")
+        else
+            basename="${token##*/}"
+            if [[ "$basename" == *.* ]]; then
+                while IFS= read -r full; do
+                    [[ -n "$full" ]] && files+=("$full")
+                done < <(git -C "$repo_root" ls-files | awk -v b="$basename" 'BEGIN{n=0} {split($0,a,"/"); if (a[length(a)]==b && n<4) {print; n++}}')
+            fi
+        fi
+    done < <(printf '%s\n' "$text" | grep -Eo '[A-Za-z0-9_./-]+\.(js|ts|json|md|yml|yaml|toml|py|sh)' | sort -u)
+
+    # Add high-signal files by endpoint/domain terms.
+    local lower
+    lower=$(printf '%s' "$text" | tr '[:upper:]' '[:lower:]')
+    if [[ "$lower" == *"runterminalscript"* || "$lower" == *"commands/execute"* || "$lower" == *"script mode"* || "$lower" == *"bounded executor"* ]]; then
+        for full in api/terminal.js serverModules/apiRoutes.js serverModules/swaggerSetup.js api/activityLog.js package.json README.md SETUP.md; do
+            [[ -f "$repo_root/$full" ]] && files+=("$full")
+        done
+    fi
+    if [[ "$lower" == *"openapi"* || "$lower" == *"schema"* || "$lower" == *"readme"* || "$lower" == *"setup"* || "$lower" == *"documentation"* ]]; then
+        for full in serverModules/swaggerSetup.js README.md SETUP.md package.json; do
+            [[ -f "$repo_root/$full" ]] && files+=("$full")
+        done
+    fi
+    if [[ "$lower" == *"test"* || "$lower" == *"acceptance"* || "$lower" == *"smoke"* ]]; then
+        for full in package.json README.md SETUP.md; do
+            [[ -f "$repo_root/$full" ]] && files+=("$full")
+        done
+    fi
+
+    # Fallback: use grep over tracked text files for rare domain tokens.
+    if [[ ${#files[@]} -lt 3 ]]; then
+        for token in runterminalscript commands execute terminal swagger activity bounded timeout; do
+            if [[ "$lower" == *"$token"* ]]; then
+                while IFS= read -r full; do
+                    [[ -n "$full" ]] && files+=("$full")
+                done < <(git -C "$repo_root" grep -Il -m1 "$token" -- '*.js' '*.json' '*.md' 2>/dev/null | head -n 6)
+            fi
+        done
+    fi
+
+    [[ ${#files[@]} -gt 0 ]] || return 0
+    printf '%s\n' "${files[@]}" | sed '/^$/d' | awk '!seen[$0]++' | sed -n "1,${max_files}p"
+}
+
+tangle_build_repo_context_block() {
+    local assigned_subtask="$1"
+    local repo_root
+    repo_root=$(tangle_resolve_repo_root) || return 0
+    local resolved
+    resolved=$(tangle_resolve_repo_context_files "$assigned_subtask")
+    cat <<EOF
+Repository context for this subtask:
+- The worktree is the source of truth. Do not invent repository layout from generic names.
+- Treat the decomposer's Files clause as approximate intent. Prefer the resolved files below when they conflict with invented paths.
+- If none of the resolved files fit, inspect the tracked file list and report the blocker.
+
+Tracked files, first 200:
+$(git -C "$repo_root" ls-files 2>/dev/null | sed -n '1,200p')
+
+Resolved relevant files to inspect/edit for this subtask:
+${resolved:-<none resolved>}
+EOF
+}
+
+tangle_scope_is_known_or_explicit_new_file() {
+    local scope="$1"
+    local normalized="${scope%/}"
+    [[ -z "$normalized" ]] && return 1
+
+    local repo_root
+    if ! repo_root=$(tangle_resolve_repo_root 2>/dev/null); then
+        if [[ -n "${PROJECT_ROOT:-}" && -d "$PROJECT_ROOT" ]]; then
+            repo_root="$PROJECT_ROOT"
+        else
+            repo_root=$(git -C "$(pwd)" rev-parse --show-toplevel 2>/dev/null || pwd)
+        fi
+    fi
+    if git -C "$repo_root" rev-parse --show-toplevel >/dev/null 2>&1; then
+        if git -C "$repo_root" ls-files --error-unmatch "$normalized" >/dev/null 2>&1; then
+            return 0
+        fi
+        local child_matches
+        child_matches=$(git -C "$repo_root" ls-files "$normalized/" 2>/dev/null || true)
+        if [[ -n "$child_matches" ]]; then
+            return 0
+        fi
+    fi
+
+    [[ -e "$repo_root/$normalized" ]] && return 0
+
+    if [[ "$scope" != */ && "${normalized##*/}" == *.* ]]; then
+        local parent="${normalized%/*}"
+        [[ "$parent" == "$normalized" ]] && return 0
+        [[ -d "$repo_root/$parent" ]] && return 0
+        if git -C "$repo_root" rev-parse --show-toplevel >/dev/null 2>&1; then
+            local parent_matches
+            parent_matches=$(git -C "$repo_root" ls-files "$parent/" 2>/dev/null || true)
+            if [[ -n "$parent_matches" ]]; then
+                return 0
+            fi
+        fi
+    fi
+    return 1
+}
+
 tangle_validate_parallel_write_scopes() {
     local subtasks="$1"
     local task_index=0
@@ -889,18 +1042,39 @@ tangle_validate_parallel_write_scopes() {
             return 1
         fi
 
+        local effective_scopes=""
+        while IFS= read -r scope; do
+            [[ -z "$scope" ]] && continue
+            if tangle_scope_is_known_or_explicit_new_file "$scope"; then
+                effective_scopes="${effective_scopes}${scope}
+"
+            else
+                local resolved_scopes
+                resolved_scopes=$(tangle_resolve_repo_context_files "$subtask")
+                if [[ -n "$resolved_scopes" ]]; then
+                    effective_scopes="${effective_scopes}${resolved_scopes}
+"
+                else
+                    effective_scopes="${effective_scopes}${scope}
+"
+                fi
+            fi
+        done <<< "$scopes"
+        effective_scopes=$(printf '%s
+' "$effective_scopes" | sed '/^$/d' | sort -u)
+
         while IFS= read -r scope; do
             [[ -z "$scope" ]] && continue
             local i
             for i in "${!existing_scopes[@]}"; do
                 if tangle_scopes_overlap "$scope" "${existing_scopes[$i]}"; then
-                    echo "coding subtask ${task_index} write scope '${scope}' overlaps subtask ${existing_tasks[$i]} scope '${existing_scopes[$i]}'"
+                    echo "coding subtask ${task_index} effective write scope '${scope}' overlaps subtask ${existing_tasks[$i]} scope '${existing_scopes[$i]}'"
                     return 1
                 fi
             done
             existing_scopes+=("$scope")
             existing_tasks+=("$task_index")
-        done <<< "$scopes"
+        done <<< "$effective_scopes"
     done <<< "$subtasks"
 
     [[ $coding_count -eq 0 ]] && return 0
@@ -961,14 +1135,9 @@ tangle_develop() {
         log INFO "Using grasp context from: $grasp_file"
     fi
 
-    # v8.18.0: Pre-work design review ceremony
-    design_review_ceremony "$prompt" "$context"
-
-    # Step 1: Decompose into validated subtasks
-    log INFO "Step 1: Task decomposition..."
-
-    # Resolve a referenced Markdown plan file without letting grep/head trip
-    # pipefail when the prompt has no file token.
+    # Resolve a referenced Markdown plan file before both design review and
+    # decomposition. Claude-based reviewers cannot read files outside the active
+    # worktree unless the content is injected into the prompt.
     local resolved_prompt="$prompt"
     local file_ref=""
     local raw_file_ref=""
@@ -976,16 +1145,34 @@ tangle_develop() {
     local noglob_was_set=false
     [[ "$-" == *f* ]] && noglob_was_set=true || set -f
     for token in $prompt; do
-        if [[ "$token" == *.md ]]; then
+        local candidate_ref="$token"
+        local candidate_basename
+        candidate_ref="${candidate_ref#plan:}"
+        candidate_ref="${candidate_ref#plan=}"
+        candidate_basename="${candidate_ref##*/}"
+        if [[ "$token" == plan:* || "$token" == plan=* || "$candidate_basename" == "plan.md" || "$candidate_basename" == *.plan.md || "$candidate_basename" == *-plan.md ]]; then
             raw_file_ref="$token"
-            file_ref="${token/#\~/$HOME}"
+            raw_file_ref="${raw_file_ref#plan:}"
+            raw_file_ref="${raw_file_ref#plan=}"
+            file_ref="${raw_file_ref/#\~/$HOME}"
             break
         fi
     done
     [[ "$noglob_was_set" == "false" ]] && set +f
     if [[ -n "$file_ref" && -f "$file_ref" ]]; then
+        local max_plan_bytes="${OCTOPUS_PLAN_INJECT_MAX_BYTES:-40000}"
+        [[ "$max_plan_bytes" =~ ^[0-9]+$ ]] || max_plan_bytes=40000
+        local file_size
+        file_size=$(wc -c < "$file_ref" 2>/dev/null || echo 0)
         local file_content
-        file_content=$(<"$file_ref")
+        if [[ "$file_size" -gt "$max_plan_bytes" ]]; then
+            file_content="$(head -c "$max_plan_bytes" "$file_ref" 2>/dev/null)"
+            file_content="${file_content}
+
+[... truncated from ${file_size} bytes to ${max_plan_bytes} bytes ...]"
+        else
+            file_content=$(<"$file_ref")
+        fi
         local plan_block="--- PLAN: ${file_ref} ---
 ${file_content}
 --- END PLAN ---"
@@ -1004,7 +1191,22 @@ The following referenced plan file has been resolved. Use it as implementation c
 
 ${plan_block}"
         fi
-        log INFO "Resolved file reference: ${file_ref} - injecting content into decompose prompt"
+        log INFO "Resolved file reference: ${file_ref} - injecting content into workflow prompt"
+    fi
+
+    # v8.18.0: Pre-work design review ceremony. Use resolved_prompt so reviewers
+    # receive plan content instead of an unreadable cross-workspace file path.
+    design_review_ceremony "$resolved_prompt" "$context"
+
+    # Step 1: Decompose into validated subtasks
+    log INFO "Step 1: Task decomposition..."
+
+    local repo_file_map=""
+    local repo_root
+    if repo_root=$(tangle_resolve_repo_root 2>/dev/null); then
+        repo_file_map="Repository files available for write scopes (from git ls-files, first 200):
+$(git -C "$repo_root" ls-files 2>/dev/null | sed -n 1,200p)
+"
     fi
 
     local decompose_prompt="Decompose this task into subtasks that can be executed in parallel.
@@ -1017,7 +1219,8 @@ Each subtask should be:
 
 **Cohesion rule:** If the task produces a single deliverable (one file, one script, one page, one config), keep it as ONE subtask — do not split it. Only decompose when subtasks are truly independent with no cross-file references between them. Aim for 2-6 subtasks; fewer is better when the work is tightly coupled.
 
-${context}Task: $resolved_prompt
+${context}${repo_file_map}
+Task: $resolved_prompt
 
 Output as numbered list with [CODING] or [REASONING] prefix for each subtask."
 
