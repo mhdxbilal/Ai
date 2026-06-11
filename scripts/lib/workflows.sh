@@ -8,6 +8,38 @@ if ! type probe_result_file_status >/dev/null 2>&1; then
     [[ -f "$_octo_probe_results_lib" ]] && source "$_octo_probe_results_lib"
 fi
 
+if ! type octopus_agent_override >/dev/null 2>&1; then
+    octopus_agent_override() {
+        local phase="$1"
+        local role="$2"
+        local default_agent="$3"
+        local phase_key role_key env_name value
+
+        phase_key=$(printf '%s' "$phase" | tr '[:lower:]-' '[:upper:]_' | sed -E 's/[^A-Z0-9_]+/_/g; s/^_+//; s/_+$//')
+        role_key=$(printf '%s' "$role" | tr '[:lower:]-' '[:upper:]_' | sed -E 's/[^A-Z0-9_]+/_/g; s/^_+//; s/_+$//')
+
+        if [[ -n "$phase_key" && -n "$role_key" ]]; then
+            env_name="OCTOPUS_${phase_key}_${role_key}_AGENT"
+            value="${!env_name:-}"
+            [[ -n "$value" ]] && { echo "$value"; return 0; }
+        fi
+
+        if [[ -n "$phase_key" ]]; then
+            env_name="OCTOPUS_${phase_key}_AGENT"
+            value="${!env_name:-}"
+            [[ -n "$value" ]] && { echo "$value"; return 0; }
+        fi
+
+        if [[ -n "$role_key" ]]; then
+            env_name="OCTOPUS_${role_key}_AGENT"
+            value="${!env_name:-}"
+            [[ -n "$value" ]] && { echo "$value"; return 0; }
+        fi
+
+        echo "$default_agent"
+    }
+fi
+
 # v8.54.0: Single-agent probe for multi-agentic skill dispatch
 # Runs one probe perspective synchronously and writes result to RESULTS_DIR.
 # Called by Claude's Agent tool (one per perspective) instead of probe_discover().
