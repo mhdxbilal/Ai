@@ -250,6 +250,33 @@ printf "openrouter:%s\n" "$([ -n "${OPENROUTER_API_KEY:-}" ] && echo available |
 echo "PROVIDER_CHECK_END"
 ```
 
+Render provider availability from actual provider checks before the plan visualization. Do not hand-write or summarize this provider block; run this block and include its output exactly in the plan. The output MUST include the Antigravity line even when `agy` is missing.
+
+```bash
+status_cli() { command -v "$1" >/dev/null 2>&1 && echo "Available ✓" || echo "Not installed ✗"; }
+status_env() { [[ -n "${1:-}" ]] && echo "Configured ✓" || echo "Not configured ✗"; }
+codex_status="$(status_cli codex)"
+gemini_status="$(status_cli gemini)"
+agy_status="$(status_cli agy)"
+opencode_status="$(status_cli opencode)"
+copilot_status="$(status_cli copilot)"
+qwen_status="$(status_cli qwen)"
+if command -v ollama >/dev/null 2>&1 && curl -sf http://localhost:11434/api/tags >/dev/null 2>&1; then ollama_status="Available ✓"; else ollama_status="Not installed ✗"; fi
+perplexity_status="$(status_env "${PERPLEXITY_API_KEY:-}")"
+cat <<BANNER
+Provider Availability:
+🔴 Codex CLI: ${codex_status}
+🟡 Gemini CLI: ${gemini_status}
+🧭 Antigravity CLI: ${agy_status}
+🟤 OpenCode: ${opencode_status}
+🟢 Copilot CLI: ${copilot_status}
+🟠 Qwen CLI: ${qwen_status}
+⚫ Ollama: ${ollama_status}
+🔵 Claude: Available ✓
+🟣 Perplexity: ${perplexity_status}
+BANNER
+```
+
 **Display a comprehensive plan visualization with ACTUAL provider status:**
 
 ```

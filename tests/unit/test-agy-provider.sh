@@ -146,10 +146,12 @@ test_agy_doctor_provider_check() {
 
     if [[ -x "$PROJECT_ROOT/scripts/doctor.sh" ]] && \
        grep -q 'agy-cli' "$PROJECT_ROOT/scripts/lib/doctor.sh" && \
-       grep -q 'OCTO_AGY_MIN_VERSION' "$PROJECT_ROOT/scripts/lib/provider-versions.sh"; then
+       grep -q 'OCTO_AGY_MIN_VERSION' "$PROJECT_ROOT/scripts/lib/provider-versions.sh" && \
+       grep -q 'Antigravity CLI' "$PROJECT_ROOT/.claude/skills/skill-doctor/SKILL.md" && \
+       grep -q 'Antigravity CLI' "$PROJECT_ROOT/skills/skill-doctor/SKILL.md"; then
         test_pass
     else
-        test_fail "doctor should expose agy provider diagnostics with a version floor"
+        test_fail "doctor should expose agy provider diagnostics and user-facing guidance"
     fi
 }
 
@@ -438,6 +440,43 @@ test_review_command_generates_antigravity_banner() {
     fi
 }
 
+test_provider_aware_commands_generate_antigravity_banners() {
+    test_case "provider-aware commands generate Antigravity-visible banners"
+
+    local missing=""
+    local commands=(
+        auto
+        brainstorm
+        embrace
+        factory
+        plan
+        review
+    )
+
+    local command
+    for command in "${commands[@]}"; do
+        local claude_file="$PROJECT_ROOT/.claude/commands/${command}.md"
+        local cursor_file="$PROJECT_ROOT/.cursor-plugin/commands/octo-${command}.md"
+        for file in "$claude_file" "$cursor_file"; do
+            grep -q 'Do not hand-write or summarize this' "$file" || missing+="${file}: missing generated-banner instruction"$'\n'
+            grep -q 'agy_status="$(status_cli agy)"' "$file" || missing+="${file}: missing agy status assignment"$'\n'
+            grep -q 'Antigravity.*${agy_status}' "$file" || missing+="${file}: missing rendered Antigravity status line"$'\n'
+        done
+    done
+
+    for file in "$PROJECT_ROOT/.claude/commands/setup.md" "$PROJECT_ROOT/.cursor-plugin/commands/octo-setup.md"; do
+        grep -q 'Do not hand-write or summarize this provider block' "$file" || missing+="${file}: missing generated setup table instruction"$'\n'
+        grep -q 'agy_status="$(status_installed agy)"' "$file" || missing+="${file}: missing setup agy status assignment"$'\n'
+        grep -q '🧭 Antigravity:    ${agy_status}' "$file" || missing+="${file}: missing setup Antigravity status line"$'\n'
+    done
+
+    if [[ -z "$missing" ]]; then
+        test_pass
+    else
+        test_fail "provider-aware commands must generate Antigravity-visible banners: $missing"
+    fi
+}
+
 test_provider_workflow_review_regressions() {
     test_case "provider workflow snippets avoid Round 2 review regressions"
 
@@ -501,6 +540,7 @@ test_agy_debate_skill_uses_runtime_advisors
 test_user_facing_docs_route_external_provider_dispatch
 test_provider_aware_commands_show_core_provider_status
 test_review_command_generates_antigravity_banner
+test_provider_aware_commands_generate_antigravity_banners
 test_provider_workflow_review_regressions
 
 test_summary

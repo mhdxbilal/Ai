@@ -51,7 +51,39 @@ printf "os:%s\n" "$(uname -s)"
 
 ## STEP 2: Display Status Summary
 
-Show a compact table:
+Render the setup status table from actual detection output. Do not hand-write or summarize this provider block; run this block and display its output exactly. The output MUST include the Antigravity line even when `agy` is missing.
+
+```bash
+status_installed() { command -v "$1" >/dev/null 2>&1 && echo "Installed ✓" || echo "Missing ✗"; }
+status_optional() { command -v "$1" >/dev/null 2>&1 && echo "Installed ✓" || echo "Not installed"; }
+status_env() { [[ -n "${1:-}" ]] && echo "Configured ✓" || echo "Not set ✗"; }
+codex_status="$(status_installed codex)"
+gemini_status="$(status_installed gemini)"
+agy_status="$(status_installed agy)"
+perplexity_status="$(status_env "${PERPLEXITY_API_KEY:-}")"
+copilot_status="$(status_optional copilot)"
+qwen_status="$(status_optional qwen)"
+opencode_status="$(status_optional opencode)"
+vibe_status="$(status_optional vibe)"
+if command -v ollama >/dev/null 2>&1 && curl -sf http://localhost:11434/api/tags >/dev/null 2>&1; then ollama_status="Running ✓"; elif command -v ollama >/dev/null 2>&1; then ollama_status="Installed"; else ollama_status="Not installed"; fi
+cat <<BANNER
+🐙 Octopus Setup
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Providers:
+  🔴 Codex CLI:      ${codex_status}
+  🟡 Gemini CLI:     ${gemini_status}
+  🧭 Antigravity:    ${agy_status} (model: ${OCTOPUS_AGY_MODEL:-default})
+  🟣 Perplexity:     ${perplexity_status}
+  🟢 Copilot CLI:    ${copilot_status}
+  🟠 Qwen CLI:       ${qwen_status}
+  🟤 OpenCode:       ${opencode_status}
+  🔶 Vibe (Mistral): ${vibe_status}
+  ⚫ Ollama:         ${ollama_status}
+  🔵 Claude:         Available ✓
+BANNER
+```
+
+The rendered setup table must look like this shape, with ACTUAL statuses:
 
 ```
 🐙 Octopus Setup
