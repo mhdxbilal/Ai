@@ -415,6 +415,29 @@ test_provider_aware_commands_show_core_provider_status() {
     fi
 }
 
+test_review_command_generates_antigravity_banner() {
+    test_case "review command renders Antigravity status from provider probe"
+
+    local missing=""
+    local files=(
+        "$PROJECT_ROOT/.claude/commands/review.md"
+        "$PROJECT_ROOT/.cursor-plugin/commands/octo-review.md"
+    )
+
+    local file
+    for file in "${files[@]}"; do
+        grep -q 'Do not hand-write or summarize this banner' "$file" || missing+="${file}: missing generated-banner instruction"$'\n'
+        grep -q 'agy_status="$(status_cli agy)"' "$file" || missing+="${file}: missing agy status assignment"$'\n'
+        grep -q '🧭 Antigravity CLI: ${agy_status}' "$file" || missing+="${file}: missing rendered Antigravity status line"$'\n'
+    done
+
+    if [[ -z "$missing" ]]; then
+        test_pass
+    else
+        test_fail "review command must render Antigravity in the provider banner: $missing"
+    fi
+}
+
 test_provider_workflow_review_regressions() {
     test_case "provider workflow snippets avoid Round 2 review regressions"
 
@@ -477,6 +500,7 @@ test_agy_slash_command_no_stale_three_provider_copy
 test_agy_debate_skill_uses_runtime_advisors
 test_user_facing_docs_route_external_provider_dispatch
 test_provider_aware_commands_show_core_provider_status
+test_review_command_generates_antigravity_banner
 test_provider_workflow_review_regressions
 
 test_summary
