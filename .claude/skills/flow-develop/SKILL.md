@@ -340,7 +340,7 @@ Read the synthesis file and present:
 ```
 ---
 *Multi-AI Implementation powered by Claude Octopus*
-*Providers: 🔴 Codex | 🟡 Gemini | 🧭 Antigravity | 🔵 Claude*
+*Providers: available external providers + 🔵 Claude*
 *Full implementation plan: $SYNTHESIS_FILE*
 ```
 

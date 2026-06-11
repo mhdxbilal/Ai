@@ -169,7 +169,7 @@ Read the synthesis file and format according to `format_choice`:
 **Include attribution:**
 ```
 *Multi-AI Research powered by Claude Octopus*
-*Providers: 🔴 Codex | 🟡 Gemini | 🧭 Antigravity | 🔵 Claude*
+*Providers: available external providers + 🔵 Claude*
 *Full synthesis: $SYNTHESIS_FILE*
 ```
 

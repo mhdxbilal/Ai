@@ -430,6 +430,10 @@ For each round, iterate the runtime advisor list and dispatch through Octopus:
 ```bash
 IFS=',' read -r -a ADVISOR_LIST <<< "$ADVISORS"
 for advisor in "${ADVISOR_LIST[@]}"; do
+  case "$advisor" in
+    codex*|gemini*|agy*|antigravity|copilot*|qwen*|opencode*|ollama*|cursor-agent*|vibe*) ;;
+    *) echo "Skipping unsupported advisor: $advisor"; continue ;;
+  esac
   safe_advisor=$(printf '%s' "$advisor" | tr -c '[:alnum:]_-' '_')
   "${HOME}/.claude-octopus/plugin/scripts/orchestrate.sh" spawn "$advisor" \
     "You are ${advisor} participating in debate round 1.

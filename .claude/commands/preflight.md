@@ -9,7 +9,7 @@ allowed-tools: Bash
 Run a quick health check on all configured AI providers before starting a workflow.
 
 ```bash
-OCTO_ROOT="${OCTO_ROOT:-$(git -C "$(pwd)" rev-parse --show-toplevel 2>/dev/null || echo "${HOME}/.claude-octopus/plugin")}"
+OCTO_ROOT="${OCTO_ROOT:-${CLAUDE_PLUGIN_ROOT:-${HOME}/.claude-octopus/plugin}}"
 bash "${OCTO_ROOT}/scripts/helpers/preflight.sh"
 ```
 

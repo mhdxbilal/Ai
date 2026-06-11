@@ -309,7 +309,7 @@ Read the validation file and present:
 ```
 ---
 *Multi-AI Validation powered by Claude Octopus*
-*Providers: 🔴 Codex | 🟡 Gemini | 🧭 Antigravity | 🔵 Claude*
+*Providers: available external providers + 🔵 Claude*
 *Full validation report: $VALIDATION_FILE*
 ```
 
@@ -337,7 +337,7 @@ ${REVIEW_SUMMARY}
 
 ---
 *Multi-AI validation by Claude Octopus (/octo:deliver)*
-*Providers: 🔴 Codex | 🟡 Gemini | 🧭 Antigravity | 🔵 Claude*"
+*Providers: available external providers + 🔵 Claude*"
 
     echo "Validation report posted to PR #${PR_NUM}"
 

@@ -110,6 +110,11 @@ Launch external providers in parallel through Octopus routing:
 
 ```bash
 TOPIC="[TOPIC]"
+ORCH="${HOME}/.claude-octopus/plugin/scripts/orchestrate.sh"
+[[ -x "$ORCH" ]] || { echo "Octopus orchestrator not found: $ORCH"; exit 1; }
+"$ORCH" 2>&1 | grep -q 'spawn <agent>' || { echo "Octopus orchestrator does not expose spawn"; exit 1; }
+
+RUN_DIR="$(mktemp -d "${TMPDIR:-/tmp}/octopus-brainstorm.XXXXXX")"
 FLEET_OUTPUT=$("${HOME}/.claude-octopus/plugin/scripts/helpers/build-fleet.sh" research standard "$TOPIC" 2>/dev/null || true)
 ADVISORS=$(echo "$FLEET_OUTPUT" | awk -F'|' '$1 !~ /^claude/ {print $1}' | paste -sd',' -)
 if [[ -z "$ADVISORS" ]]; then
@@ -122,8 +127,12 @@ fi
 
 IFS=',' read -r -a ADVISOR_LIST <<< "$ADVISORS"
 for advisor in "${ADVISOR_LIST[@]}"; do
+  case "$advisor" in
+    codex*|gemini*|agy*|antigravity|copilot*|qwen*|opencode*|ollama*|cursor-agent*|vibe*) ;;
+    *) echo "Skipping unsupported advisor: $advisor"; continue ;;
+  esac
   safe_advisor=$(printf '%s' "$advisor" | tr -c '[:alnum:]_-' '_')
-  "${HOME}/.claude-octopus/plugin/scripts/orchestrate.sh" spawn "$advisor" \
+  "$ORCH" spawn "$advisor" \
     "Think creatively about: ${TOPIC}
 
 Your role: independent brainstorm advisor.
@@ -132,7 +141,7 @@ Your role: independent brainstorm advisor.
 - Include at least one unconventional approach.
 
 Be specific and creative. Avoid generic advice." \
-    > "/tmp/octopus-brainstorm-${safe_advisor}.md" &
+    > "${RUN_DIR}/octopus-brainstorm-${safe_advisor}.md" &
 done
 wait
 ```

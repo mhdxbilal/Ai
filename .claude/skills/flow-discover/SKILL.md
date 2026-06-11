@@ -390,7 +390,7 @@ done
 ```
 ---
 *Multi-AI Research powered by Claude Octopus*
-*Providers: 🔴 Codex | 🟡 Gemini | 🧭 Antigravity | 🔵 Claude*
+*Providers: available external providers + 🔵 Claude*
 *Full synthesis: $SYNTHESIS_FILE*
 ```
 

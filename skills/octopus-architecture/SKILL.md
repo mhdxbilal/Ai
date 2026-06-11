@@ -101,7 +101,7 @@ Present the architecture design from the persona execution.
 **Include attribution:**
 ```
 *Multi-AI Architecture Design powered by Claude Octopus*
-*Providers: 🔴 Codex | 🟡 Gemini | 🧭 Antigravity | 🔵 Claude*
+*Providers: available external providers + 🔵 Claude*
 ```
 
 
