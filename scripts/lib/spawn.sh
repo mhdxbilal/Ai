@@ -548,9 +548,18 @@ ${heuristic_ctx}"
             cmd_array+=(-p "")
         fi
         # Belt-and-suspenders: bypass Gemini's interactive trust check in headless mode (#405).
-        # Newer Gemini CLI versions removed --skip-trust; add it only when supported.
-        if [[ "$agent_type" == gemini* ]] && [[ $(gemini --help 2>&1 | grep -c -- --skip-trust || true) -gt 0 ]]; then
-            cmd_array+=(--skip-trust)
+        # Newer Gemini CLI versions removed --skip-trust; detect support once per spawn process.
+        if [[ "$agent_type" == gemini* ]]; then
+            if [[ -z "${_GEMINI_SUPPORTS_SKIP_TRUST+x}" ]]; then
+                if [[ $(gemini --help 2>&1 | grep -c -- --skip-trust || true) -gt 0 ]]; then
+                    _GEMINI_SUPPORTS_SKIP_TRUST=true
+                else
+                    _GEMINI_SUPPORTS_SKIP_TRUST=false
+                fi
+            fi
+            if [[ "$_GEMINI_SUPPORTS_SKIP_TRUST" == "true" ]]; then
+                cmd_array+=(--skip-trust)
+            fi
         fi
 
         local auth_attempt=0
