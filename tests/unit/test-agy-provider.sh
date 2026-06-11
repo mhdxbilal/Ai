@@ -343,8 +343,10 @@ test_agy_debate_skill_uses_runtime_advisors() {
     if [[ -z "$stale" ]] && \
        grep -q 'orchestrate.sh" spawn "$advisor"' "$PROJECT_ROOT/.claude/skills/skill-debate/SKILL.md" && \
        grep -q 'command -v agy' "$PROJECT_ROOT/.claude/skills/skill-debate/SKILL.md" && \
+       grep -q 'claude\*|codex\*|gemini\*|agy\*' "$PROJECT_ROOT/.claude/skills/skill-debate/SKILL.md" && \
        grep -q 'orchestrate.sh" spawn "$advisor"' "$PROJECT_ROOT/skills/skill-debate/SKILL.md" && \
-       grep -q 'command -v agy' "$PROJECT_ROOT/skills/skill-debate/SKILL.md"; then
+       grep -q 'command -v agy' "$PROJECT_ROOT/skills/skill-debate/SKILL.md" && \
+       grep -q 'claude\*|codex\*|gemini\*|agy\*' "$PROJECT_ROOT/skills/skill-debate/SKILL.md"; then
         test_pass
     else
         test_fail "debate skill should dispatch runtime advisors through orchestrate.sh and include agy fallback; stale copy: $stale"
@@ -413,6 +415,40 @@ test_provider_aware_commands_show_core_provider_status() {
     fi
 }
 
+test_provider_workflow_review_regressions() {
+    test_case "provider workflow snippets avoid Round 2 review regressions"
+
+    local missing=""
+    local brainstorm_files=(
+        "$PROJECT_ROOT/.claude/commands/brainstorm.md"
+        "$PROJECT_ROOT/.cursor-plugin/commands/octo-brainstorm.md"
+    )
+
+    local file
+    for file in "${brainstorm_files[@]}"; do
+        grep -q 'ORCH_HELP="$("$ORCH" 2>&1 || true)"' "$file" || missing+="${file}: missing pipefail-safe orchestrator probe"$'\n'
+        grep -q 'trap '\''rm -rf "$RUN_DIR"'\'' EXIT' "$file" || missing+="${file}: missing tempdir cleanup trap"$'\n'
+        grep -q 'claude\*|codex\*|gemini\*|agy\*' "$file" || missing+="${file}: missing claude advisor allowlist"$'\n'
+    done
+
+    grep -q 'CLAUDE_PLUGIN_ROOT:-' "$PROJECT_ROOT/.claude/commands/setup.md" || missing+=".claude/commands/setup.md: setup root not plugin-anchored"$'\n'
+    grep -q 'CLAUDE_PLUGIN_ROOT:-' "$PROJECT_ROOT/.cursor-plugin/commands/octo-setup.md" || missing+=".cursor-plugin/commands/octo-setup.md: setup root not plugin-anchored"$'\n'
+
+    if grep -R -n '\${agy_status}' "$PROJECT_ROOT/.claude/skills/flow-deliver" "$PROJECT_ROOT/skills/flow-deliver" >/dev/null 2>&1; then
+        missing+="flow-deliver: stale agy_status placeholder remains"$'\n'
+    fi
+
+    if grep -R -n -- '--rounds 3' "$PROJECT_ROOT/.claude/skills/flow-define" "$PROJECT_ROOT/skills/flow-define" >/dev/null 2>&1; then
+        missing+="flow-define: restored debate should not use --rounds 3"$'\n'
+    fi
+
+    if [[ -z "$missing" ]]; then
+        test_pass
+    else
+        test_fail "provider workflow review regressions remain: $missing"
+    fi
+}
+
 test_agy_config_exists
 test_agy_available_agent
 test_agy_dispatch_native_flags
@@ -441,5 +477,6 @@ test_agy_slash_command_no_stale_three_provider_copy
 test_agy_debate_skill_uses_runtime_advisors
 test_user_facing_docs_route_external_provider_dispatch
 test_provider_aware_commands_show_core_provider_status
+test_provider_workflow_review_regressions
 
 test_summary

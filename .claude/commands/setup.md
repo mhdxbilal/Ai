@@ -291,7 +291,7 @@ If Knowledge Work selected, offer to install document-skills plugin.
 After work mode is confirmed, persist the choice:
 
 ```bash
-OCTO_ROOT="${OCTO_ROOT:-$(git -C "$(pwd)" rev-parse --show-toplevel 2>/dev/null || echo "${HOME}/.claude-octopus/plugin")}"
+OCTO_ROOT="${OCTO_ROOT:-${CLAUDE_PLUGIN_ROOT:-${HOME}/.claude-octopus/plugin}}"
 PLUGIN_FALLBACK_ROOT="${HOME}/.claude-octopus/plugin"
 if ! source "${OCTO_ROOT}/scripts/lib/user-config.sh" 2>/dev/null; then
   source "${PLUGIN_FALLBACK_ROOT}/scripts/lib/user-config.sh" 2>/dev/null || echo "Warning: could not load Octopus user-config helpers; setup preferences were not persisted."

@@ -198,7 +198,7 @@ Use AskUserQuestion tool to ask:
 **If user selected "Multi-LLM debate (Claude + available providers)" for approach:**
 Before proceeding with orchestrate.sh, run a Multi-LLM debate to determine the technical approach:
 ```
-/octo:debate --rounds 3 "What is the best technical approach for [feature]? Consider: speed to market, maintainability, performance, and the existing codebase patterns."
+/octo:debate --rounds 2 --debate-style collaborative "What is the best technical approach for [feature]? Consider: speed to market, maintainability, performance, and the existing codebase patterns."
 ```
 Use the debate synthesis to set the approach context for the Define phase.
 

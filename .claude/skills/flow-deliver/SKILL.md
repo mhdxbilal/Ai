@@ -129,9 +129,9 @@ If `OCTO_ALLOWED_PROVIDERS` is set, treat it as the source of truth for which pr
 ✅ [Dev] Deliver Phase: [Brief description of code review]
 
 Provider Availability:
-🔴 Codex CLI: ${codex_status} - Code quality analysis
-🟡 Gemini CLI: ${gemini_status} - Security and edge cases
-🧭 Antigravity CLI: ${agy_status} - Additional external-model challenge
+🔴 Codex CLI: [Available ✓ / Not installed ✗] - Code quality analysis
+🟡 Gemini CLI: [Available ✓ / Not installed ✗] - Security and edge cases
+🧭 Antigravity CLI: [Available ✓ / Not installed ✗] - Additional external-model challenge
 🔵 Claude: Available ✓ - Synthesis and recommendations
 
 💰 Estimated Cost: $0.02-0.08
@@ -144,9 +144,9 @@ Provider Availability:
 ✅ [Knowledge] Deliver Phase: [Brief description of document review]
 
 Provider Availability:
-🔴 Codex CLI: ${codex_status} - Structure and logic analysis
-🟡 Gemini CLI: ${gemini_status} - Content quality and completeness
-🧭 Antigravity CLI: ${agy_status} - Additional external-model challenge
+🔴 Codex CLI: [Available ✓ / Not installed ✗] - Structure and logic analysis
+🟡 Gemini CLI: [Available ✓ / Not installed ✗] - Content quality and completeness
+🧭 Antigravity CLI: [Available ✓ / Not installed ✗] - Additional external-model challenge
 🔵 Claude: Available ✓ - Synthesis and recommendations
 
 💰 Estimated Cost: $0.02-0.08
