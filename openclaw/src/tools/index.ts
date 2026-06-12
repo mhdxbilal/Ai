@@ -118,4 +118,4 @@ export const SKILL_REGISTRY: SkillRegistryEntry[] = [
   { name: "unfreeze", description: "[advanced] Remove freeze mode edit restriction", type: "command", file: "unfreeze.md" },
 ];
 
-export const REGISTRY_COUNT = 101;
+export const REGISTRY_COUNT = 102;
